@@ -2,8 +2,9 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: sovereign-postgres
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
@@ -12,15 +13,25 @@ services:
       POSTGRES_DB: sovereign_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - sovereign-net
 
   redis:
     image: redis:7-alpine
     container_name: sovereign-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - sovereign-net
 
 volumes:
   postgres_data:
   redis_data:
+
+networks:
+  sovereign-net:
+    driver: bridge
