@@ -42,6 +42,7 @@ Thumbs.db
 .vscode/
 .idea/
 
-# TypeScript cache
+# Uploads & Runtime Files
+uploads/
 *.tsbuildinfo
 next-env.d.ts

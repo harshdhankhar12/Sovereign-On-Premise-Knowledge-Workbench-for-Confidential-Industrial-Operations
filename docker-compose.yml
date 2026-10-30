@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: ankane/pgvector:latest
     container_name: sovereign-postgres
     restart: unless-stopped
     ports:
