@@ -199,3 +199,4 @@ function parseInlineFormatting(text: string): React.ReactNode {
 
   return parts;
 }
+
