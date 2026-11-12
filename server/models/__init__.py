@@ -5,6 +5,8 @@ from server.models.document import (
     EquipmentTag,
     ChunkTagMapping,
 )
+from server.models.agent import AgentTask, TaskStep
+from server.models.calculation import CalculationRun
 
 __all__ = [
     "Document",
@@ -12,4 +14,7 @@ __all__ = [
     "DocumentChunk",
     "EquipmentTag",
     "ChunkTagMapping",
+    "AgentTask",
+    "TaskStep",
+    "CalculationRun",
 ]

@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS agent_tasks (
 
 CREATE TABLE IF NOT EXISTS task_steps (
     id BIGSERIAL PRIMARY KEY,
-    task_id UUID NOT NULL REFERENCES agent_tasks(id) ON DELETE CASCADE,
+    task_id UUID REFERENCES agent_tasks(id) ON DELETE CASCADE,
     node_name VARCHAR(100) NOT NULL,
     step_status VARCHAR(50) NOT NULL,
     step_message TEXT NOT NULL,
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS task_steps (
 
 CREATE TABLE IF NOT EXISTS calculation_runs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    task_id UUID NOT NULL REFERENCES agent_tasks(id) ON DELETE CASCADE,
+    task_id UUID REFERENCES agent_tasks(id) ON DELETE CASCADE,
     formula_name VARCHAR(100) NOT NULL,
     python_code TEXT NOT NULL,
     input_params JSONB NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS calculation_runs (
 
 CREATE TABLE IF NOT EXISTS approval_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    task_id UUID NOT NULL REFERENCES agent_tasks(id) ON DELETE CASCADE,
+    task_id UUID REFERENCES agent_tasks(id) ON DELETE CASCADE,
     action_type VARCHAR(100) NOT NULL,
     draft_content TEXT NOT NULL,
     engineer_edits TEXT,
@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 CREATE TABLE IF NOT EXISTS processing_metrics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    task_id UUID NOT NULL REFERENCES agent_tasks(id) ON DELETE CASCADE,
+    task_id UUID REFERENCES agent_tasks(id) ON DELETE CASCADE,
     total_duration_seconds DOUBLE PRECISION NOT NULL,
     manual_baseline_minutes DOUBLE PRECISION DEFAULT 45.0,
     time_saved_minutes DOUBLE PRECISION GENERATED ALWAYS AS (manual_baseline_minutes - (total_duration_seconds / 60.0)) STORED,

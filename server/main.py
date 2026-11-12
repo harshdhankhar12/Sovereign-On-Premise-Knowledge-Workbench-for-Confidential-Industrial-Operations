@@ -1,7 +1,3 @@
-# python -m uvicorn server.main:app --reload --port 8000
-
-
-
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +5,7 @@ from sqlalchemy import text
 from server.core.config import settings
 from server.core.database import engine
 from server.api.documents import router as documents_router
+from server.api.sandbox import router as sandbox_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,6 +29,7 @@ app.add_middleware(
 )
 
 app.include_router(documents_router, prefix=settings.API_V1_PREFIX)
+app.include_router(sandbox_router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/")
 async def root():
