@@ -119,6 +119,17 @@ Connects live Distributed Control System (DCS) process telemetry directly to con
 * **Operator Sign-Off & Cryptographic Audit Ledger Integration:** Allows control room operators to interactively execute and sign off emergency checklist steps, cryptographically anchoring each acknowledged step, user credentials, and execution timestamp into the SHA-256 tamper-evident ledger.
 * **Interactive Frontend DCS Telemetry & Incident Console:** Adds a dedicated 7th tab to the Next.js workbench dashboard featuring real-time unit telemetry cards, industrial gauge indicators, fault injection scenario simulator buttons, emergency alert banners, and interactive step-by-step sign-off checklists.
 
+### 12. Automated Shift Handover Log & 5-Why Incident Root Cause Analysis (RCA) Generator
+Bridges the gap between operational incidents and formal refinery safety engineering, autonomously synthesizing dual-signatory shift handover logs and structured 5-Why Root Cause Analysis (RCA) reports with Corrective & Preventive Actions (CAPA).
+
+* **Autonomous Shift Handover Intelligence:** Aggregates operational events, active/tripped DCS alarms, equipment lineups, and pending MOC tickets directly from the PostgreSQL cryptographic audit ledger to generate standardized 8-hour shift logs (`MORNING`, `EVENING`, `NIGHT`).
+* **Dual-Signatory Cryptographic Handover Seal:** Enforces formal custody transfer requiring outgoing Shift In-Charge (SIC) digital signature and relieving engineer counter-signature, cryptographically anchored into the SHA-256 tamper-evident ledger.
+* **5-Why Incident Root Cause Analysis (RCA) Engine:** Synthesizes structured, physics-grounded 5-Why causal investigation trees for critical refinery excursions (CDU furnace coil overheat, FCCU slurry pump vibration trip, HCU reactor quench runaway) grounded strictly in MRPL SOPs and P&ID topography.
+* **Targeted CAPA Generation:** Automatically assigns Corrective and Preventive Actions with explicit action descriptions, responsible engineering division owners, target SOP references, and resolution deadlines (in days).
+* **Official Branded Watermarked PDF Exports:** Programmatically renders publication-grade, watermarked MRPL Shift Handover and 5-Why RCA PDF documents featuring corporate header blocks, causal progression tables, and SHA-256 verification seals ready for physical filing and safety committee audits.
+* **Interactive Frontend Safety Investigation Console:** Adds a dedicated 8th tab to the Next.js workbench dashboard featuring shift period selectors, dual-signature custody transfer panels, incident preset selectors, visual 5-Why tree progression blocks, CAPA assignment tables, and 1-click PDF export buttons.
+
+
 
 
 

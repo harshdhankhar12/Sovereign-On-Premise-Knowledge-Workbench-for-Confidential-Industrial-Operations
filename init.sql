@@ -130,6 +130,38 @@ CREATE TABLE IF NOT EXISTS processing_metrics (
     recorded_at TIMESTAMPTZ DEFAULT clock_timestamp()
 );
 
+CREATE TABLE IF NOT EXISTS shift_handovers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    shift_type VARCHAR(50) NOT NULL,
+    outgoing_operator VARCHAR(100) NOT NULL,
+    relieving_operator VARCHAR(100),
+    events_count INTEGER DEFAULT 0,
+    critical_incidents JSONB DEFAULT '[]'::jsonb,
+    equipment_status JSONB DEFAULT '{}'::jsonb,
+    pending_mocs JSONB DEFAULT '[]'::jsonb,
+    standing_orders JSONB DEFAULT '[]'::jsonb,
+    handover_summary TEXT NOT NULL,
+    outgoing_signature CHAR(64) NOT NULL,
+    relieving_signature CHAR(64),
+    created_at TIMESTAMPTZ DEFAULT clock_timestamp(),
+    countersigned_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS rca_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    incident_title VARCHAR(255) NOT NULL,
+    plant_unit VARCHAR(100) NOT NULL,
+    triggering_tag VARCHAR(50),
+    sop_reference VARCHAR(100),
+    problem_statement TEXT NOT NULL,
+    why_steps JSONB DEFAULT '[]'::jsonb,
+    capa_items JSONB DEFAULT '[]'::jsonb,
+    formal_analysis TEXT NOT NULL,
+    investigator_id VARCHAR(100) NOT NULL,
+    signature_hash CHAR(64) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT clock_timestamp()
+);
+
 CREATE INDEX IF NOT EXISTS idx_document_versions_document_id ON document_versions(document_id);
 CREATE INDEX IF NOT EXISTS idx_document_versions_hash ON document_versions(file_hash_sha256);
 CREATE INDEX IF NOT EXISTS idx_document_versions_metadata ON document_versions USING gin (metadata);

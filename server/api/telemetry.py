@@ -126,3 +126,4 @@ async def acknowledge_step(
         completed_at=ack_record["completed_at"],
         completed_by=request.operator_role,
     )
+

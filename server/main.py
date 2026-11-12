@@ -15,6 +15,7 @@ from server.api.drawings import router as drawings_router
 from server.api.audit import router as audit_router
 from server.api.governance import router as governance_router
 from server.api.telemetry import router as telemetry_router
+from server.api.investigation import router as investigation_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,6 +49,7 @@ app.include_router(drawings_router, prefix=settings.API_V1_PREFIX)
 app.include_router(audit_router, prefix=settings.API_V1_PREFIX)
 app.include_router(governance_router, prefix=settings.API_V1_PREFIX)
 app.include_router(telemetry_router, prefix=settings.API_V1_PREFIX)
+app.include_router(investigation_router, prefix=settings.API_V1_PREFIX)
 app.include_router(websocket_router, prefix=settings.API_V1_PREFIX)
 app.include_router(websocket_router, prefix="")
 

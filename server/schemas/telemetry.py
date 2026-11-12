@@ -67,3 +67,4 @@ class StepAcknowledgeRequest(BaseModel):
     alarm_id: str
     step_id: str
     operator_role: str = "Operator"
+

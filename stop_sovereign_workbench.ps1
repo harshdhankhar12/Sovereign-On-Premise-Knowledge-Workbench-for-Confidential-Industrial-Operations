@@ -19,3 +19,4 @@ if ($nodeProcesses) {
 Write-Host "=====================================================================" -ForegroundColor Green
 Write-Host "  ALL LOCAL WORKBENCH SERVICES TERMINATED SAFELY                     " -ForegroundColor Green
 Write-Host "=====================================================================" -ForegroundColor Green
+

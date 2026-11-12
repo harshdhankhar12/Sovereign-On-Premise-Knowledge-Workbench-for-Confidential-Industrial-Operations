@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 
 Write-Host "=====================================================================" -ForegroundColor Cyan
 Write-Host "  STARTING SOVEREIGN INDUSTRIAL KNOWLEDGE WORKBENCH (MRPL SIH26117)  " -ForegroundColor Cyan
@@ -54,3 +54,4 @@ Write-Host "  WORKBENCH READY • AIR-GAPPED ZERO-EGRESS MODE ENFORCED          
 Write-Host "  Backend:  http://localhost:8000 (API & Swagger Docs)               " -ForegroundColor White
 Write-Host "  Frontend: http://localhost:3000 (Industrial Control Console)       " -ForegroundColor White
 Write-Host "=====================================================================" -ForegroundColor Green
+

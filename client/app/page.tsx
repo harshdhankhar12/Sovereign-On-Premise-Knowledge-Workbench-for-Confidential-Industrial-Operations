@@ -36,7 +36,10 @@ import {
   FileSignature,
   Activity,
   Gauge,
-  Zap
+  Zap,
+  FileCheck2,
+  UserCheck,
+  GitBranch
 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8000/api/v1';
@@ -52,7 +55,7 @@ const ROLES: { id: RoleType; label: string; clearance: string[] }[] = [
 ];
 
 export default function WorkbenchDashboard() {
-  const [activeTab, setActiveTab] = useState<'chat' | 'docs' | 'sandbox' | 'drawings' | 'audit' | 'governance' | 'telemetry'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'docs' | 'sandbox' | 'drawings' | 'audit' | 'governance' | 'telemetry' | 'investigation'>('chat');
   const [currentRole, setCurrentRole] = useState<RoleType>('PROCESS_ENGINEER');
   const [token, setToken] = useState<string>('');
   const [clearances, setClearances] = useState<string[]>(['PUBLIC', 'INTERNAL', 'RESTRICTED']);
@@ -123,6 +126,23 @@ export default function WorkbenchDashboard() {
   const [selectedAlarm, setSelectedAlarm] = useState<any>(null);
   const [faultInjectLoading, setFaultInjectLoading] = useState<boolean>(false);
   const [stepAckLoading, setStepAckLoading] = useState<string | null>(null);
+
+  const [shiftType, setShiftType] = useState<string>('MORNING');
+  const [outgoingOp, setOutgoingOp] = useState<string>('Er. Rajesh Kumar (Shift In-Charge CDU-1)');
+  const [relievingOp, setRelievingOp] = useState<string>('Er. Vikram Shetty (Relief SIC)');
+  const [currentHandover, setCurrentHandover] = useState<any>(null);
+  const [handoverLoading, setHandoverLoading] = useState<boolean>(false);
+  const [countersignLoading, setCountersignLoading] = useState<boolean>(false);
+
+  const [rcaPresets, setRcaPresets] = useState<any[]>([]);
+  const [selectedRcaPreset, setSelectedRcaPreset] = useState<string>('CDU_FURNACE_OVERHEAT');
+  const [rcaTitle, setRcaTitle] = useState<string>('CDU-1 Atmospheric Furnace Coil Outlet Over-Temperature Trip');
+  const [rcaUnit, setRcaUnit] = useState<string>('CDU-1');
+  const [rcaTag, setRcaTag] = useState<string>('TT-102');
+  const [rcaSop, setRcaSop] = useState<string>('MRPL-SOP-OPS-101');
+  const [rcaObservation, setRcaObservation] = useState<string>('Furnace coil outlet temperature TT-102 spiked to 392.4°C exceeding 385.0°C trip limit, triggering automated feed valve XV-101 closure and emergency bypass.');
+  const [currentRcaReport, setCurrentRcaReport] = useState<any>(null);
+  const [rcaLoading, setRcaLoading] = useState<boolean>(false);
 
   useEffect(() => {
     fetchToken(currentRole);
@@ -593,6 +613,106 @@ export default function WorkbenchDashboard() {
     setStepAckLoading(null);
   };
 
+  const fetchRcaPresets = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/investigation/rca/presets`);
+      if (res.ok) {
+        const data = await res.json();
+        setRcaPresets(data);
+      }
+    } catch {}
+  };
+
+  const fetchLatestHandover = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/investigation/shift-handover/latest`);
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentHandover(data);
+      }
+    } catch {}
+  };
+
+  const handleGenerateHandover = async () => {
+    setHandoverLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/investigation/shift-handover/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          shift_type: shiftType,
+          outgoing_operator: outgoingOp,
+          relieving_operator: relievingOp,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentHandover(data);
+      }
+    } catch {}
+    setHandoverLoading(false);
+  };
+
+  const handleCountersignHandover = async () => {
+    if (!currentHandover) return;
+    setCountersignLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/investigation/shift-handover/${currentHandover.id}/countersign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          relieving_operator: relievingOp,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentHandover(data);
+      }
+    } catch {}
+    setCountersignLoading(false);
+  };
+
+  const handleSelectPreset = (p: any) => {
+    setSelectedRcaPreset(p.key);
+    setRcaTitle(p.incident_title);
+    setRcaUnit(p.plant_unit);
+    setRcaTag(p.triggering_tag);
+    setRcaSop(p.sop_reference);
+    setRcaObservation(p.initial_observation);
+  };
+
+  const handleGenerateRca = async () => {
+    setRcaLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/investigation/rca/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          incident_title: rcaTitle,
+          plant_unit: rcaUnit,
+          triggering_tag: rcaTag,
+          sop_reference: rcaSop,
+          initial_observation: rcaObservation,
+          investigator_id: `Lead Process Engineer (${currentRole})`,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentRcaReport(data);
+      }
+    } catch {}
+    setRcaLoading(false);
+  };
+
   useEffect(() => {
     if (activeTab === 'audit') {
       fetchAuditLogs();
@@ -601,6 +721,9 @@ export default function WorkbenchDashboard() {
       fetchRoiMetrics();
     } else if (activeTab === 'telemetry') {
       fetchTelemetry();
+    } else if (activeTab === 'investigation') {
+      fetchRcaPresets();
+      fetchLatestHandover();
     }
   }, [activeTab, token]);
 
@@ -795,6 +918,18 @@ export default function WorkbenchDashboard() {
                   {activeAlarms.length} ALARM{activeAlarms.length > 1 ? 'S' : ''}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('investigation')}
+              className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${
+                activeTab === 'investigation'
+                  ? 'border-slate-900 text-slate-900'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              <FileCheck2 className="w-4 h-4" />
+              <span>Shift Handover &amp; 5-Why RCA</span>
             </button>
           </div>
         </div>
@@ -2356,6 +2491,317 @@ export default function WorkbenchDashboard() {
                     )}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'investigation' && (
+          <div className="space-y-6">
+            <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-slate-900 text-white p-2.5 rounded-md">
+                    <FileCheck2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">Shift Handover Intelligence &amp; 5-Why Root Cause Analysis</h2>
+                    <p className="text-xs text-slate-500 font-mono mt-0.5">
+                      Autonomous Shift Log Synthesis • Dual-Signatory Cryptographic Handover • 5-Why Causal Investigation &amp; CAPA
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <span className="text-[11px] font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded border border-slate-200">
+                    Active Clearance: {currentRole}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-6 space-y-4">
+                <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center space-x-2">
+                      <UserCheck className="w-4 h-4 text-slate-800" />
+                      <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Plant Operations Shift Handover</h3>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                      8-HOUR OPERATIONAL CYCLE
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {['MORNING', 'EVENING', 'NIGHT'].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setShiftType(s)}
+                        className={`py-2 text-xs font-bold font-mono rounded border transition text-center ${
+                          shiftType === s
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {s} SHIFT
+                        <span className="block text-[9px] font-normal text-slate-400 mt-0.5">
+                          {s === 'MORNING' ? '06:00 - 14:00' : s === 'EVENING' ? '14:00 - 22:00' : '22:00 - 06:00'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">Outgoing Shift In-Charge (SIC)</label>
+                      <input
+                        type="text"
+                        value={outgoingOp}
+                        onChange={(e) => setOutgoingOp(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-xs text-slate-800 font-mono focus:outline-none focus:border-slate-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">Relieving Shift In-Charge (SIC)</label>
+                      <input
+                        type="text"
+                        value={relievingOp}
+                        onChange={(e) => setRelievingOp(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-xs text-slate-800 font-mono focus:outline-none focus:border-slate-500"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleGenerateHandover}
+                    disabled={handoverLoading}
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded transition flex items-center justify-center space-x-2 shadow-sm disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${handoverLoading ? 'animate-spin' : ''}`} />
+                    <span>Synthesize Shift Handover from Live Cryptographic Ledger</span>
+                  </button>
+
+                  {currentHandover && (
+                    <div className="space-y-3 pt-3 border-t border-slate-100">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-mono font-bold text-slate-700">Ref: MRPL-SH-{currentHandover.id.slice(0, 8).toUpperCase()}</span>
+                        <span className="text-[11px] text-slate-500 font-mono">
+                          Events Audited: <strong className="text-slate-800">{currentHandover.events_count}</strong>
+                        </span>
+                      </div>
+
+                      <div className="bg-slate-50 border border-slate-200 rounded p-3 text-xs font-mono max-h-56 overflow-y-auto whitespace-pre-wrap leading-relaxed text-slate-800">
+                        {currentHandover.handover_summary}
+                      </div>
+
+                      <div className="bg-slate-50 border border-slate-300 rounded-lg p-3.5 space-y-2 text-xs">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                          Dual-Signatory Cryptographic Handover Seal
+                        </div>
+                        <div className="font-mono text-[11px] space-y-1">
+                          <div className="text-slate-700 truncate">
+                            Outgoing Sig (SHA-256): <span className="font-bold text-slate-900">{currentHandover.outgoing_signature}</span>
+                          </div>
+                          <div className="text-slate-700 truncate">
+                            Relief Sig: {currentHandover.relieving_signature ? (
+                              <span className="font-bold text-emerald-700">{currentHandover.relieving_signature}</span>
+                            ) : (
+                              <span className="text-amber-700 font-semibold">Awaiting Relief Counter-Signature</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2 pt-2">
+                          {!currentHandover.relieving_signature && (
+                            <button
+                              onClick={handleCountersignHandover}
+                              disabled={countersignLoading}
+                              className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold py-2 rounded transition flex items-center justify-center space-x-1.5 shadow-sm disabled:opacity-50"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Relief Counter-Sign</span>
+                            </button>
+                          )}
+                          <a
+                            href={`${API_BASE}/investigation/shift-handover/${currentHandover.id}/export-pdf`}
+                            download
+                            className="flex-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold py-2 rounded transition flex items-center justify-center space-x-1.5 shadow-sm text-center"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Export Signed PDF</span>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="lg:col-span-6 space-y-4">
+                <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center space-x-2">
+                      <GitBranch className="w-4 h-4 text-slate-800" />
+                      <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">5-Why Incident Root Cause Analysis (RCA)</h3>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                      SAFETY INVESTIGATION &amp; CAPA
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1.5">Load Incident Preset</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                      {rcaPresets.map((p) => (
+                        <button
+                          key={p.key}
+                          onClick={() => handleSelectPreset(p)}
+                          className={`p-2 text-left rounded border transition ${
+                            selectedRcaPreset === p.key
+                              ? 'bg-slate-900 text-white border-slate-900'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          <div className="text-[11px] font-bold truncate">{p.incident_title.split(' ')[0]} {p.incident_title.split(' ')[1]}</div>
+                          <div className="text-[9px] font-mono text-slate-400 mt-0.5">{p.plant_unit} • {p.triggering_tag}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">Incident Title</label>
+                      <input
+                        type="text"
+                        value={rcaTitle}
+                        onChange={(e) => setRcaTitle(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-500"
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">Plant Unit</label>
+                        <input
+                          type="text"
+                          value={rcaUnit}
+                          onChange={(e) => setRcaUnit(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1.5 text-xs text-slate-800 font-mono focus:outline-none focus:border-slate-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">Triggering Tag</label>
+                        <input
+                          type="text"
+                          value={rcaTag}
+                          onChange={(e) => setRcaTag(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1.5 text-xs text-slate-800 font-mono focus:outline-none focus:border-slate-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">Governing SOP</label>
+                        <input
+                          type="text"
+                          value={rcaSop}
+                          onChange={(e) => setRcaSop(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1.5 text-xs text-slate-800 font-mono focus:outline-none focus:border-slate-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">Initial Observation / Alarm Event</label>
+                      <textarea
+                        rows={2}
+                        value={rcaObservation}
+                        onChange={(e) => setRcaObservation(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-xs text-slate-800 font-mono focus:outline-none focus:border-slate-500"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleGenerateRca}
+                    disabled={rcaLoading}
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded transition flex items-center justify-center space-x-2 shadow-sm disabled:opacity-50"
+                  >
+                    <GitBranch className={`w-3.5 h-3.5 ${rcaLoading ? 'animate-spin' : ''}`} />
+                    <span>Run 5-Why Causal Investigation &amp; Synthesize CAPA</span>
+                  </button>
+
+                  {currentRcaReport && (
+                    <div className="space-y-3 pt-3 border-t border-slate-100">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-mono font-bold text-slate-700">RCA ID: {currentRcaReport.id.slice(0, 8).toUpperCase()}</span>
+                        <a
+                          href={`${API_BASE}/investigation/rca/${currentRcaReport.id}/export-pdf`}
+                          download
+                          className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded transition flex items-center space-x-1 shadow-sm"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>Export Signed RCA PDF</span>
+                        </a>
+                      </div>
+
+                      <div className="bg-rose-50 border border-rose-200 rounded p-2.5 text-xs text-rose-950 font-medium">
+                        <span className="font-bold">Problem Statement: </span>
+                        {currentRcaReport.problem_statement}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-600">5-Why Causal Progression Tree</div>
+                        {currentRcaReport.why_steps?.map((w: any) => (
+                          <div key={w.level} className="bg-slate-50 border border-slate-200 rounded p-2.5 text-xs space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <span className="bg-slate-800 text-white font-mono text-[9px] font-bold px-1.5 py-0.2 rounded">
+                                LEVEL {w.level}
+                              </span>
+                              <span className="font-semibold text-slate-900">{w.question}</span>
+                            </div>
+                            <div className="text-slate-700 pl-4 border-l-2 border-slate-300 mt-1">
+                              <strong>Finding:</strong> {w.answer}
+                            </div>
+                            <div className="text-[10px] font-mono text-slate-400 pl-4">
+                              Evidence: {w.evidence_reference}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                          Assigned Corrective &amp; Preventive Actions (CAPA)
+                        </div>
+                        <div className="space-y-1.5">
+                          {currentRcaReport.capa_items?.map((c: any, idx: number) => (
+                            <div key={idx} className="bg-slate-50 border border-slate-200 rounded p-2 text-xs flex items-start justify-between gap-2">
+                              <div>
+                                <div className="flex items-center space-x-1.5">
+                                  <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${
+                                    c.action_type === 'CORRECTIVE' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                                  }`}>
+                                    {c.action_type}
+                                  </span>
+                                  <span className="font-medium text-slate-800">{c.description}</span>
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                  Owner: {c.owner} • Target SOP: {c.target_sop}
+                                </div>
+                              </div>
+                              <span className="bg-slate-200 text-slate-800 text-[10px] font-mono px-2 py-0.5 rounded font-bold shrink-0">
+                                {c.deadline_days}d
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-50 border border-slate-200 rounded p-2.5 text-[10px] font-mono text-slate-600 truncate">
+                        Digital Verification Seal (SHA-256): <span className="font-bold text-slate-900">{currentRcaReport.signature_hash}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
