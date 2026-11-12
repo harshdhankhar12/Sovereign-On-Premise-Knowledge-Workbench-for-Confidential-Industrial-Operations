@@ -47,5 +47,15 @@ Allows plant engineers to upload Piping and Instrumentation Diagrams (P&IDs) and
 * **High-Resolution Vector Rasterization:** Generates high-definition visual representations of schematic pages with color-coded bounding box overlays for equipment, instruments, and isolation valves.
 * **Topological Schematic Q&A:** Allows engineers to ask natural language questions about technical drawings, combining extracted spatial connectivity with local AI reasoning to deliver accurate operational answers.
 
+### 6. Sovereign RBAC, Clearance Levels and Cryptographic Audit Ledger
+Provides enterprise-grade access control and a blockchain-inspired tamper-evident audit ledger to enforce strict data confidentiality across all refinery operations.
+
+* **Role-Based Access Control (RBAC):** Enforces distinct operational permissions across four plant roles: Operator, Process Engineer, Plant Manager, and Safety Auditor using sovereign JWT authentication.
+* **Row-Level Clearance Enforcement in Vector Search:** Automatically enforces document confidentiality tiers (`PUBLIC`, `INTERNAL`, `RESTRICTED`, `SECRET`) at the database query level, preventing operators from retrieving secret formulas while allowing authorized engineers and managers access.
+* **Tamper-Evident SHA-256 Hash Chain:** Cryptographically links every user action, calculation, document search, and procedure view in sequence using parent hash references, ensuring records cannot be silently modified or deleted.
+* **One-Click Cryptographic Chain Verifier:** Allows safety auditors to verify the mathematical integrity of the entire audit database from genesis to the latest record, detecting unauthorized changes in seconds.
+* **Automated Anti-Tamper Alarm:** Instantly identifies the exact record ID and sequence number if any database entry is manipulated, corrupted, or altered.
+
+
 
 

@@ -41,6 +41,7 @@ class VectorSearchService:
         plant_unit: Optional[str] = None,
         doc_type: Optional[str] = None,
         similarity_threshold: float = 0.3,
+        allowed_clearances: Optional[List[str]] = None,
     ) -> List[SearchResultItem]:
         query_text = query.strip()
         if not query_text:
@@ -54,6 +55,8 @@ class VectorSearchService:
             filters.append(Document.plant_unit == plant_unit)
         if doc_type:
             filters.append(Document.doc_type == doc_type)
+        if allowed_clearances:
+            filters.append(Document.confidentiality_level.in_(allowed_clearances))
 
         stmt = (
             select(

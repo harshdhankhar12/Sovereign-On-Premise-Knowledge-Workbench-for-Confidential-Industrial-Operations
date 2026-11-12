@@ -39,6 +39,15 @@ from server.schemas.drawings import (
     DrawingQARequest,
     DrawingQAResponse,
 )
+from server.schemas.security import (
+    TokenRequest,
+    TokenResponse,
+    AuditLogEventRequest,
+    AuditLogItem,
+    AuditChainVerifyResponse,
+    SecureSearchRequest,
+    SecureSearchResponse,
+)
 
 __all__ = [
     "DocumentBase",
@@ -72,4 +81,11 @@ __all__ = [
     "TraceEquipmentResponse",
     "DrawingQARequest",
     "DrawingQAResponse",
+    "TokenRequest",
+    "TokenResponse",
+    "AuditLogEventRequest",
+    "AuditLogItem",
+    "AuditChainVerifyResponse",
+    "SecureSearchRequest",
+    "SecureSearchResponse",
 ]
