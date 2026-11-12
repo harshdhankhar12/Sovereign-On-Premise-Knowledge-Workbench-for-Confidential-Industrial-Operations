@@ -54,3 +54,4 @@ def inspect_excel_structure(file_path: str) -> Dict[str, Any]:
 
     wb.close()
     return summary
+

@@ -94,3 +94,4 @@ def validate_code_safety(code: str) -> None:
 
     checker = CodeSecurityChecker()
     checker.visit(tree)
+

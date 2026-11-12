@@ -179,3 +179,4 @@ with open(r"{output_file}", "w", encoding="utf-8") as _f_out:
                 os.rmdir(temp_dir)
             except OSError:
                 pass
+

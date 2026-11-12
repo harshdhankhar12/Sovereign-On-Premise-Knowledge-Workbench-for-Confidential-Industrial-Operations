@@ -285,3 +285,4 @@ async def get_calculation_history(
         }
         for r in records
     ]
+
