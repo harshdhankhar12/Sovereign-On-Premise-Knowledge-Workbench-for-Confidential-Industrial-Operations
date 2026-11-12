@@ -97,6 +97,20 @@ Empowers refinery engineers to automate the creation of formal technical memoran
 * **Plant-Wide Productivity & ROI Telemetry:** Tracks turnaround duration comparing workbench automation (<2 seconds) against manual engineering drafting baselines (45 minutes per note), dynamically aggregating cumulative engineer-hours saved, estimated cost savings in INR (@ ₹1,500/hr baseline rate), and speedup acceleration percentage (~98–100%).
 * **Interactive Frontend Governance Console:** Adds a dedicated 6th tab to the Next.js workbench dashboard featuring real-time ROI metric cards, quick preset drafting buttons, filterable approval queues with live pending badges, side-by-side review panels, and one-click PDF downloads.
 
+### 10. Air-Gapped Standalone Production Deployment Package & Zero-Egress Verification
+Provides a complete, single-command containerized production deployment architecture engineered strictly for air-gapped refinery edge servers with automated zero-network-egress cryptographic verification.
+
+* **Multi-Stage Containerized Architecture:** Deploys the sovereign workbench via unified `docker-compose.prod.yml` orchestrating isolated containers: `sovereign-postgres` (pgvector HNSW), `sovereign-redis` (FIFO task broker), `sovereign-ollama` (local offline model storage), `sovereign-backend` (FastAPI Python 3.12-slim runtime), and `sovereign-frontend` (Next.js 16.4.2 production runner).
+* **Self-Contained Offline Dependencies:** Completely isolates dependencies with pre-packaged wheels, static Next.js assets, and local volume persistence (`postgres_prod_data`, `redis_prod_data`, `ollama_prod_data`) ensuring zero internet calls during cold boot or runtime.
+* **1-Click Operator Automation Scripts:** Provides `start_sovereign_workbench.ps1` and `stop_sovereign_workbench.ps1` for Windows and industrial edge hosts to automatically perform container health checks, local Ollama verification, backend lifecycle orchestration, and browser launch.
+* **Automated Zero-Egress Verification Suite:** Features `scripts/verify_air_gap_egress.py` to cryptographically prove zero external egress:
+  * Raw socket exfiltration intercepts against cloud AI endpoints (`api.openai.com`, `api.anthropic.com`, `8.8.8.8`, `1.1.1.1`).
+  * AST sandbox security interception blocking malicious network imports (`socket`, `urllib.request`, `requests`, `os.system`).
+  * Verification of 100% on-premise local model loading for `llama3.2:1b` and `nomic-embed-text`.
+  * Database-wide cryptographic audit query confirming exactly `0` bytes of external egress across all recorded operational events.
+* **Production Environment Hardening:** Configured with `.env.production` setting strict air-gapped enforcement flags (`AIR_GAPPED_MODE=true`, `NETWORK_EGRESS_BLOCK=true`), internal network bridging, and hardened process isolation.
+
+
 
 
 

@@ -1,0 +1,97 @@
+services:
+  sovereign-postgres:
+    image: ankane/pgvector:latest
+    container_name: sovereign-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sovereign_db
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - sovereign-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d sovereign_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  sovereign-redis:
+    image: redis:7-alpine
+    container_name: sovereign-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - sovereign-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  sovereign-ollama:
+    image: ollama/ollama:latest
+    container_name: sovereign-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_prod_data:/root/.ollama
+    networks:
+      - sovereign-net
+
+  sovereign-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: sovereign-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://user:password@sovereign-postgres:5432/sovereign_db
+      REDIS_URL: redis://sovereign-redis:6379/0
+      OLLAMA_BASE_URL: http://sovereign-ollama:11434
+      LLM_MODEL: llama3.2:1b
+      EMBEDDING_MODEL: nomic-embed-text
+      AIR_GAPPED_MODE: "true"
+      SECRET_KEY: sovereign_industrial_secret_key_mrpl_2026
+    depends_on:
+      sovereign-postgres:
+        condition: service_healthy
+      sovereign-redis:
+        condition: service_healthy
+    networks:
+      - sovereign-net
+
+  sovereign-frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: sovereign-client
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+      NODE_ENV: production
+    depends_on:
+      - sovereign-backend
+    networks:
+      - sovereign-net
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+  ollama_prod_data:
+
+networks:
+  sovereign-net:
+    driver: bridge

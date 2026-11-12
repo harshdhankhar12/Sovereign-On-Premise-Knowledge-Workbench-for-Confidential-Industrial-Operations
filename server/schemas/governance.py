@@ -49,3 +49,4 @@ class RoiMetricsResponse(BaseModel):
     manual_baseline_hours: float
     speedup_percentage: float
     unit_breakdown: List[UnitMetricsItem]
+
