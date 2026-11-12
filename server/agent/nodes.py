@@ -1,11 +1,12 @@
 import json
 import re
 import time
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from server.agent.state import AgentState, AgentStepLog
 from server.core.llm import OllamaChatService
 from server.retrieval.vector_store import VectorSearchService
+from server.core.queue import queue_manager
 from server.sandbox.formulas import (
     calculate_heat_exchanger_duty,
     calculate_darcy_weisbach_loss,
@@ -13,10 +14,20 @@ from server.sandbox.formulas import (
     detect_outliers_and_stats,
 )
 
+async def notify_step(task_id: Optional[str], event_type: str, data: Dict[str, Any]) -> None:
+    if task_id:
+        try:
+            await queue_manager.publish_event(str(task_id), event_type, data)
+        except Exception:
+            pass
+
 async def intent_node(
     state: AgentState,
     llm: OllamaChatService,
 ) -> Dict[str, Any]:
+    task_id = state.get("task_id")
+    await notify_step(task_id, "STEP_STARTED", {"node": "intent_node", "message": "Analyzing query intent..."})
+
     t0 = time.perf_counter()
     prompt = state["prompt"]
 
@@ -71,6 +82,13 @@ async def intent_node(
         "duration_ms": elapsed,
     }
 
+    await notify_step(task_id, "STEP_COMPLETED", {
+        "node": "intent_node",
+        "intent": classified_intent,
+        "formula_name": formula_name,
+        "duration_ms": elapsed,
+    })
+
     return {
         "intent": classified_intent,
         "formula_name": formula_name,
@@ -83,6 +101,9 @@ async def retrieval_node(
     search_service: VectorSearchService,
     session: AsyncSession,
 ) -> Dict[str, Any]:
+    task_id = state.get("task_id")
+    await notify_step(task_id, "STEP_STARTED", {"node": "retrieval_node", "message": "Searching local vector store for procedures..."})
+
     t0 = time.perf_counter()
     chunks = []
     citations = []
@@ -119,6 +140,13 @@ async def retrieval_node(
         "duration_ms": elapsed,
     }
 
+    await notify_step(task_id, "STEP_COMPLETED", {
+        "node": "retrieval_node",
+        "chunks_retrieved": len(chunks),
+        "citations": citations,
+        "duration_ms": elapsed,
+    })
+
     return {
         "retrieved_chunks": chunks,
         "citations": citations,
@@ -128,8 +156,11 @@ async def retrieval_node(
 async def sandbox_node(
     state: AgentState,
 ) -> Dict[str, Any]:
-    t0 = time.perf_counter()
+    task_id = state.get("task_id")
     formula = state.get("formula_name")
+    await notify_step(task_id, "STEP_STARTED", {"node": "sandbox_node", "message": f"Executing formula {formula} in secure sandbox..." if formula else "Checking formula parameters..."})
+
+    t0 = time.perf_counter()
     params = state.get("formula_params") or {}
     output = None
 
@@ -167,6 +198,13 @@ async def sandbox_node(
         "duration_ms": elapsed,
     }
 
+    await notify_step(task_id, "STEP_COMPLETED", {
+        "node": "sandbox_node",
+        "formula": formula,
+        "output": output,
+        "duration_ms": elapsed,
+    })
+
     return {
         "sandbox_output": output,
         "steps": state["steps"] + [step_log],
@@ -175,6 +213,9 @@ async def sandbox_node(
 async def verifier_node(
     state: AgentState,
 ) -> Dict[str, Any]:
+    task_id = state.get("task_id")
+    await notify_step(task_id, "STEP_STARTED", {"node": "verifier_node", "message": "Verifying calculation consistency..."})
+
     t0 = time.perf_counter()
     claimed = state.get("claimed_value")
     output = state.get("sandbox_output")
@@ -195,6 +236,12 @@ async def verifier_node(
         "duration_ms": elapsed,
     }
 
+    await notify_step(task_id, "STEP_COMPLETED", {
+        "node": "verifier_node",
+        "verification_passed": passed,
+        "duration_ms": elapsed,
+    })
+
     return {
         "verification_passed": passed,
         "steps": state["steps"] + [step_log],
@@ -204,6 +251,9 @@ async def synthesis_node(
     state: AgentState,
     llm: OllamaChatService,
 ) -> Dict[str, Any]:
+    task_id = state.get("task_id")
+    await notify_step(task_id, "STEP_STARTED", {"node": "synthesis_node", "message": "Synthesizing verified engineering response..."})
+
     t0 = time.perf_counter()
 
     prompt = state["prompt"]
@@ -256,6 +306,12 @@ async def synthesis_node(
         "message": "Synthesized verified engineering response with citations",
         "duration_ms": elapsed,
     }
+
+    await notify_step(task_id, "STEP_COMPLETED", {
+        "node": "synthesis_node",
+        "final_response_preview": reply[:100] if reply else "",
+        "duration_ms": elapsed,
+    })
 
     return {
         "final_response": reply,

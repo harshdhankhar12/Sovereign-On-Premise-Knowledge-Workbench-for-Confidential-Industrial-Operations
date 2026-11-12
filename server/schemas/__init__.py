@@ -25,6 +25,12 @@ from server.schemas.agent import (
     AgentQueryResponse,
     AgentTaskSummary,
 )
+from server.schemas.tasks import (
+    TaskSubmitRequest,
+    TaskSubmitResponse,
+    TaskStatusResponse,
+    QueueStatsResponse,
+)
 
 __all__ = [
     "DocumentBase",
@@ -48,4 +54,8 @@ __all__ = [
     "AgentStepItem",
     "AgentQueryResponse",
     "AgentTaskSummary",
+    "TaskSubmitRequest",
+    "TaskSubmitResponse",
+    "TaskStatusResponse",
+    "QueueStatsResponse",
 ]

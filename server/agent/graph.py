@@ -98,3 +98,5 @@ class SovereignAgentWorkflow:
         compiled_app = self.build_graph(session)
         final_state = await compiled_app.ainvoke(initial_state)
         return final_state
+
+agent_workflow = SovereignAgentWorkflow()

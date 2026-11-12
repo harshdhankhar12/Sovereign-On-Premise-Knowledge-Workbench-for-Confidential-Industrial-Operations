@@ -28,3 +28,14 @@ Allows plant engineers to chat with refinery documents, ask operational question
 * **Autonomous Math Handoff:** Identifies formula queries, routes inputs directly into the isolated calculation sandbox, and delivers verified physical results within the chat response.
 * **Audit-Ready Task Ledger:** Automatically records every chat session, intent category, pipeline step duration, and citations into PostgreSQL for full compliance tracking.
 
+### 4. Asynchronous Task Queue and Live WebSocket Step Streaming
+Allows plant engineers to run heavy multi-agent workflows and calculations asynchronously without freezing the interface, watching reasoning steps live via WebSockets.
+
+* **Redis-Backed FIFO Task Queue:** Offloads long-running AI queries and multi-step formula calculations into a dedicated Redis queue, allowing the server to accept requests immediately with HTTP 202 status.
+* **Live WebSocket Step Streaming:** Streams real-time lifecycle events (`TASK_STARTED`, `STEP_STARTED`, `STEP_COMPLETED`, `TASK_COMPLETED`) directly to the user interface via `/ws/tasks/{task_id}`.
+* **Background Worker Engine:** Runs an asynchronous consumer loop inside the FastAPI lifecycle to process queued tasks, execute agent graphs, and write results to the database without dropping connections.
+* **Granular Step Transparency:** Emits exact node status and timing metrics for each pipeline stage (Intent Analysis, Vector Search, Math Sandbox, Engineering Synthesis) so engineers see full reasoning visibility.
+* **Bidirectional Task Controls:** Supports live client ping/pong keepalive signals and asynchronous task cancellation flags, allowing operators to halt long-running tasks immediately.
+* **Queue Telemetry and Status Polling:** Provides endpoints to monitor queue depth, active worker health, and percentage-based task progress for non-WebSocket clients.
+
+
