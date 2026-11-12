@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
     VISION_MODEL: str = os.getenv("VISION_MODEL", "phi3.5-vision")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "llama3.1:8b")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "llama3.2:1b")
     EMBEDDING_DIMENSION: int = 768
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "uploads")
 

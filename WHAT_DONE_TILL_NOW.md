@@ -18,3 +18,13 @@ Provides a zero-network, mathematically deterministic execution environment to v
 * **Vendor Proposal Cross-Verification:** Mathematically verifies performance numbers quoted in vendor equipment proposals against physical design formulas, calculating discrepancy percentages and tolerance compliance.
 * **Spreadsheet Manipulation:** Safely reads and updates plant operational spreadsheets (`.xlsx`) cell-by-cell without corrupting existing formulas or formatting.
 * **Immutable Calculation Ledger:** Automatically records every calculation run, input parameter set, python script, execution duration, and verification result into PostgreSQL for safety audit compliance.
+
+### 3. LangGraph Multi-Agent Orchestration Core and Sovereign Document Chat
+Allows plant engineers to chat with refinery documents, ask operational questions, and run engineering workflows through an autonomous multi-agent pipeline powered 100% locally by Ollama.
+
+* **Deterministic Intent Classification:** Analyzes user questions using local `llama3.2:1b` to automatically route requests between document knowledge retrieval, engineering calculation execution, or direct operational assistance.
+* **Stateful Multi-Agent Workflow:** Orchestrates specialized pipeline nodes (`intent_node`, `retrieval_node`, `sandbox_node`, `verifier_node`, `synthesis_node`) using LangGraph with complete state isolation and conditional branching.
+* **Evidence-Grounded AI Synthesis:** Answers technical queries strictly based on retrieved SOP chunks, citing exact document titles, page numbers, and safety warnings with zero external internet access.
+* **Autonomous Math Handoff:** Identifies formula queries, routes inputs directly into the isolated calculation sandbox, and delivers verified physical results within the chat response.
+* **Audit-Ready Task Ledger:** Automatically records every chat session, intent category, pipeline step duration, and citations into PostgreSQL for full compliance tracking.
+

@@ -19,6 +19,12 @@ from server.schemas.sandbox import (
     ExcelUpdateRequest,
     ExcelUpdateResponse,
 )
+from server.schemas.agent import (
+    AgentQueryRequest,
+    AgentStepItem,
+    AgentQueryResponse,
+    AgentTaskSummary,
+)
 
 __all__ = [
     "DocumentBase",
@@ -38,4 +44,8 @@ __all__ = [
     "ExcelCellUpdateItem",
     "ExcelUpdateRequest",
     "ExcelUpdateResponse",
+    "AgentQueryRequest",
+    "AgentStepItem",
+    "AgentQueryResponse",
+    "AgentTaskSummary",
 ]
