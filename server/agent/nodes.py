@@ -43,27 +43,29 @@ async def intent_node(
     formula_name = None
     claimed_val = None
 
-    try:
-        reply = await llm.chat(
-            messages=[
-                {"role": "system", "content": system_msg},
-                {"role": "user", "content": user_msg},
-            ],
-            temperature=0.0,
-            max_tokens=60,
-        )
-
-        match = re.search(r"\{.*\}", reply, re.DOTALL)
-        if match:
-            parsed = json.loads(match.group(0))
-            classified_intent = parsed.get("intent", "SOP_QUERY")
-    except Exception:
-        lower_prompt = prompt.lower()
-        if any(w in lower_prompt for w in ["calculate", "formula", "duty", "head loss", "pressure drop"]):
-            classified_intent = "CALCULATION"
-        elif any(w in lower_prompt for w in ["vendor", "claim", "proposal", "verify proposal"]):
-            classified_intent = "VENDOR_VERIFICATION"
-        else:
+    lower_prompt = prompt.lower()
+    if any(w in lower_prompt for w in ["calculate", "formula", "duty", "head loss", "pressure drop", "lmtd", "darcy", "pump power"]):
+        classified_intent = "CALCULATION"
+    elif any(w in lower_prompt for w in ["vendor", "claim", "proposal", "verify proposal", "discrepancy"]):
+        classified_intent = "VENDOR_VERIFICATION"
+    elif any(w in lower_prompt for w in ["sop", "procedure", "shutdown", "isolate", "valve", "step", "protocol", "temperature", "pressure", "alarm", "trip", "c-101", "t-101", "p-101", "p-201", "r-901", "nfpa", "h2s", "guideline", "standard"]):
+        classified_intent = "SOP_QUERY"
+    else:
+        try:
+            reply = await llm.chat(
+                messages=[
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_msg},
+                ],
+                temperature=0.0,
+                max_tokens=40,
+                timeout_seconds=4.0,
+            )
+            match = re.search(r"\{.*\}", reply, re.DOTALL)
+            if match:
+                parsed = json.loads(match.group(0))
+                classified_intent = parsed.get("intent", "SOP_QUERY")
+        except Exception:
             classified_intent = "SOP_QUERY"
 
     lower_p = prompt.lower()
@@ -278,10 +280,10 @@ async def synthesis_node(
         "You are an expert AI assistant for refinery engineering operations.\n"
         "Instructions:\n"
         "- Answer the engineer's query clearly and concisely using only the provided context and calculation results.\n"
-        "- Explicitly cite sources in the format [Document (Page X)].\n"
-        "- Highlight any safety precautions, isolation steps, and Lockout/Tagout (LOTO) requirements.\n"
+        "- Structure with clear bullet points, bold key equipment/tags, and explicit citations [Document (Page X)].\n"
+        "- Highlight mandatory safety precautions and isolation requirements.\n"
         "- If calculations are provided, state the verified numbers.\n"
-        "- If context does not have the information, state that the procedure is not found in indexed documents."
+        "- Keep response focused and rapid."
     )
 
     user_query = f"Context:\n{context_str}{sandbox_str}\n\nQuestion: {prompt}\n\nAnswer:"
@@ -293,8 +295,8 @@ async def synthesis_node(
                 {"role": "user", "content": user_query},
             ],
             temperature=0.1,
-            max_tokens=300,
-            timeout_seconds=120.0,
+            max_tokens=220,
+            timeout_seconds=45.0,
         )
     except Exception as e:
         reply = f"Error generating synthesis response: {str(e)}"

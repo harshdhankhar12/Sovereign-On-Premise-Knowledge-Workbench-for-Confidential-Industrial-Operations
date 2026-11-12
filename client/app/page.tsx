@@ -39,8 +39,11 @@ import {
   Zap,
   FileCheck2,
   UserCheck,
-  GitBranch
+  GitBranch,
+  BookOpen
 } from 'lucide-react';
+import Link from 'next/link';
+import FormattedResponse from './components/FormattedResponse';
 
 const API_BASE = 'http://localhost:8000/api/v1';
 const WS_BASE = 'ws://localhost:8000';
@@ -784,6 +787,14 @@ export default function WorkbenchDashboard() {
                     </option>
                   ))}
                 </select>
+
+                <Link
+                  href="/docs"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded flex items-center space-x-1 border border-slate-300 transition shadow-sm"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-slate-700" />
+                  <span className="hidden sm:inline">Docs &amp; Guide</span>
+                </Link>
               </div>
             </div>
           </div>
@@ -1075,8 +1086,8 @@ export default function WorkbenchDashboard() {
                     )}
                   </div>
 
-                  <div className="prose prose-slate max-w-none text-xs sm:text-sm text-slate-800 whitespace-pre-line leading-relaxed font-sans">
-                    {chatResponse.final_response || chatResponse.response || chatResponse.error}
+                  <div className="prose prose-slate max-w-none text-xs sm:text-sm text-slate-800 leading-relaxed font-sans">
+                    <FormattedResponse content={chatResponse.final_response || chatResponse.response || chatResponse.error || ''} />
                   </div>
 
                   {chatResponse.sandbox_output && (

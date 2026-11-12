@@ -40,3 +40,4 @@ class RcaReport(Base):
     investigator_id = Column(String(100), nullable=False)
     signature_hash = Column(String(64), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now)
+
