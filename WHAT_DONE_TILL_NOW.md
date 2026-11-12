@@ -38,4 +38,14 @@ Allows plant engineers to run heavy multi-agent workflows and calculations async
 * **Bidirectional Task Controls:** Supports live client ping/pong keepalive signals and asynchronous task cancellation flags, allowing operators to halt long-running tasks immediately.
 * **Queue Telemetry and Status Polling:** Provides endpoints to monitor queue depth, active worker health, and percentage-based task progress for non-WebSocket clients.
 
+### 5. Multimodal Engineering Drawing and P&ID Intelligence Engine
+Allows plant engineers to upload Piping and Instrumentation Diagrams (P&IDs) and technical schematics to automatically locate equipment, trace instrumentation networks, and run visual engineering queries.
+
+* **Multi-Class Tag and Symbol Recognition:** Automatically detects and categorizes industrial tags across ISA-5.1 standards including major equipment (columns, exchangers, pumps, vessels), instrumentation (pressure, temperature, flow transmitters), safety valves (XV, PSV, BDV), and piping line specifications.
+* **Spatial Proximity and Connectivity Tracing:** Uses geometric distance calculations to determine which safety valves, transmitters, and piping lines are directly connected or adjacent to any selected equipment piece.
+* **Interactive Bounding Box Coordinate Mapping:** Extracts precise coordinate boundaries for every identified component, allowing user interfaces to highlight tags with 1-click inspection.
+* **High-Resolution Vector Rasterization:** Generates high-definition visual representations of schematic pages with color-coded bounding box overlays for equipment, instruments, and isolation valves.
+* **Topological Schematic Q&A:** Allows engineers to ask natural language questions about technical drawings, combining extracted spatial connectivity with local AI reasoning to deliver accurate operational answers.
+
+
 

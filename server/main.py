@@ -11,6 +11,7 @@ from server.api.sandbox import router as sandbox_router
 from server.api.agent import router as agent_router
 from server.api.tasks import router as tasks_router
 from server.api.websocket import router as websocket_router
+from server.api.drawings import router as drawings_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -40,6 +41,7 @@ app.include_router(documents_router, prefix=settings.API_V1_PREFIX)
 app.include_router(sandbox_router, prefix=settings.API_V1_PREFIX)
 app.include_router(agent_router, prefix=settings.API_V1_PREFIX)
 app.include_router(tasks_router, prefix=settings.API_V1_PREFIX)
+app.include_router(drawings_router, prefix=settings.API_V1_PREFIX)
 app.include_router(websocket_router, prefix=settings.API_V1_PREFIX)
 app.include_router(websocket_router, prefix="")
 

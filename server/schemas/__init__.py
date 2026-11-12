@@ -31,6 +31,14 @@ from server.schemas.tasks import (
     TaskStatusResponse,
     QueueStatsResponse,
 )
+from server.schemas.drawings import (
+    DrawingEntityItem,
+    DrawingParseResponse,
+    TraceEquipmentRequest,
+    TraceEquipmentResponse,
+    DrawingQARequest,
+    DrawingQAResponse,
+)
 
 __all__ = [
     "DocumentBase",
@@ -58,4 +66,10 @@ __all__ = [
     "TaskSubmitResponse",
     "TaskStatusResponse",
     "QueueStatsResponse",
+    "DrawingEntityItem",
+    "DrawingParseResponse",
+    "TraceEquipmentRequest",
+    "TraceEquipmentResponse",
+    "DrawingQARequest",
+    "DrawingQAResponse",
 ]

@@ -7,6 +7,7 @@ from server.models.document import (
 )
 from server.models.agent import AgentTask, TaskStep
 from server.models.calculation import CalculationRun
+from server.models.drawings import EngineeringDrawing, DrawingEntity
 
 __all__ = [
     "Document",
@@ -17,4 +18,6 @@ __all__ = [
     "AgentTask",
     "TaskStep",
     "CalculationRun",
+    "EngineeringDrawing",
+    "DrawingEntity",
 ]
