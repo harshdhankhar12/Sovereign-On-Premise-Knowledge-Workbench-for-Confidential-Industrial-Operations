@@ -28,7 +28,12 @@ import {
   Eye,
   Sliders,
   Sparkles,
-  Ban
+  Ban,
+  ClipboardCheck,
+  Download,
+  TrendingUp,
+  CheckSquare,
+  FileSignature
 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8000/api/v1';
@@ -44,7 +49,7 @@ const ROLES: { id: RoleType; label: string; clearance: string[] }[] = [
 ];
 
 export default function WorkbenchDashboard() {
-  const [activeTab, setActiveTab] = useState<'chat' | 'docs' | 'sandbox' | 'drawings' | 'audit'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'docs' | 'sandbox' | 'drawings' | 'audit' | 'governance'>('chat');
   const [currentRole, setCurrentRole] = useState<RoleType>('PROCESS_ENGINEER');
   const [token, setToken] = useState<string>('');
   const [clearances, setClearances] = useState<string[]>(['PUBLIC', 'INTERNAL', 'RESTRICTED']);
@@ -95,6 +100,19 @@ export default function WorkbenchDashboard() {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [auditVerifyResult, setAuditVerifyResult] = useState<any>(null);
   const [auditLoading, setAuditLoading] = useState<boolean>(false);
+
+  const [approvals, setApprovals] = useState<any[]>([]);
+  const [selectedApproval, setSelectedApproval] = useState<any>(null);
+  const [approvalReviewNotes, setApprovalReviewNotes] = useState<string>('');
+  const [approvalEngineerEdits, setApprovalEngineerEdits] = useState<string>('');
+  const [approvalActionLoading, setApprovalActionLoading] = useState<boolean>(false);
+  const [draftTitle, setDraftTitle] = useState<string>('MOC: FCCU Slurry Pump P-201A Impeller Upgrade');
+  const [draftUnit, setDraftUnit] = useState<string>('FCCU');
+  const [draftActionType, setDraftActionType] = useState<string>('EQUIPMENT_MODIFICATION');
+  const [draftPrompt, setDraftPrompt] = useState<string>('Propose replacement of worn standard impeller on pump P-201A with hardened tungsten-carbide impeller to reduce catalyst abrasion and keep vibration below 2.8 mm/s RMS under ISO 10816-3.');
+  const [draftLoading, setDraftLoading] = useState<boolean>(false);
+  const [roiMetrics, setRoiMetrics] = useState<any>(null);
+  const [approvalFilter, setApprovalFilter] = useState<string>('ALL');
 
   useEffect(() => {
     fetchToken(currentRole);
@@ -403,9 +421,89 @@ export default function WorkbenchDashboard() {
     setAuditLoading(false);
   };
 
+  const fetchApprovals = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/governance/approvals`);
+      if (res.ok) {
+        const data = await res.json();
+        setApprovals(data);
+        if (data.length > 0 && !selectedApproval) {
+          setSelectedApproval(data[0]);
+          setApprovalEngineerEdits(data[0].engineer_edits || data[0].draft_content);
+          setApprovalReviewNotes(data[0].review_notes || '');
+        }
+      }
+    } catch {}
+  };
+
+  const fetchRoiMetrics = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/governance/metrics/roi`);
+      if (res.ok) {
+        const data = await res.json();
+        setRoiMetrics(data);
+      }
+    } catch {}
+  };
+
+  const handleDraftNote = async () => {
+    if (!draftTitle || !draftPrompt) return;
+    setDraftLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/governance/draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action_type: draftActionType,
+          title: draftTitle,
+          plant_unit: draftUnit,
+          prompt: draftPrompt,
+          user_id: `user_${currentRole.toLowerCase()}`,
+        }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        await fetchApprovals();
+        await fetchRoiMetrics();
+        setSelectedApproval(created);
+        setApprovalEngineerEdits(created.draft_content);
+        setApprovalReviewNotes('');
+      }
+    } catch {}
+    setDraftLoading(false);
+  };
+
+  const handleApprovalAction = async (action: 'APPROVE' | 'REJECT') => {
+    if (!selectedApproval) return;
+    setApprovalActionLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/governance/approvals/${selectedApproval.id}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          engineer_edits: approvalEngineerEdits,
+          reviewer_id: `user_${currentRole.toLowerCase()}`,
+          reviewer_role: currentRole,
+          review_notes: approvalReviewNotes,
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSelectedApproval(updated);
+        await fetchApprovals();
+        await fetchRoiMetrics();
+      }
+    } catch {}
+    setApprovalActionLoading(false);
+  };
+
   useEffect(() => {
     if (activeTab === 'audit') {
       fetchAuditLogs();
+    } else if (activeTab === 'governance') {
+      fetchApprovals();
+      fetchRoiMetrics();
     }
   }, [activeTab, token]);
 
@@ -558,6 +656,23 @@ export default function WorkbenchDashboard() {
             >
               <ShieldAlert className="w-4 h-4" />
               <span>Cryptographic Audit Ledger</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('governance')}
+              className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${
+                activeTab === 'governance'
+                  ? 'border-slate-900 text-slate-900'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              <ClipboardCheck className="w-4 h-4" />
+              <span>Drafting & Governance</span>
+              {approvals.filter(a => a.status === 'PENDING').length > 0 && (
+                <span className="bg-amber-100 text-amber-800 text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ml-1 border border-amber-200">
+                  {approvals.filter(a => a.status === 'PENDING').length}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -1388,6 +1503,361 @@ export default function WorkbenchDashboard() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'governance' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center justify-between text-slate-500 mb-1 text-xs">
+                  <span>Tasks Automated</span>
+                  <CheckSquare className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div className="text-2xl font-bold text-slate-900 font-mono">
+                  {roiMetrics?.total_tasks_automated || 0}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">
+                  Baseline: 45 mins/task
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center justify-between text-slate-500 mb-1 text-xs">
+                  <span>Cumulative Time Saved</span>
+                  <Clock className="w-4 h-4 text-sky-600" />
+                </div>
+                <div className="text-2xl font-bold text-slate-900 font-mono">
+                  {roiMetrics?.cumulative_hours_saved || 0} <span className="text-sm font-normal text-slate-600">hrs</span>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">
+                  Engineer turnaround freed
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center justify-between text-slate-500 mb-1 text-xs">
+                  <span>Operational Cost Saved</span>
+                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div className="text-2xl font-bold text-slate-900 font-mono">
+                  ₹{Number(roiMetrics?.cumulative_cost_saved_inr || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">
+                  @ ₹1,500/hr engineering rate
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center justify-between text-slate-500 mb-1 text-xs">
+                  <span>Speedup Acceleration</span>
+                  <Cpu className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div className="text-2xl font-bold text-slate-900 font-mono text-emerald-700">
+                  {roiMetrics?.speedup_percentage || 0}%
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">
+                  Avg turnaround: {roiMetrics?.average_turnaround_seconds || 0}s
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-5 space-y-6">
+                <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center space-x-2">
+                      <FileSignature className="w-4 h-4 text-slate-700" />
+                      <span>Draft Technical Approval Note</span>
+                    </h2>
+                    <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      LOCAL LLAMA-3.2:1B
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-700">Quick Presets:</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        onClick={() => {
+                          setDraftTitle('MOC: FCCU Slurry Pump P-201A Impeller Upgrade');
+                          setDraftUnit('FCCU');
+                          setDraftActionType('EQUIPMENT_MODIFICATION');
+                          setDraftPrompt('Propose replacement of standard impeller on slurry pump P-201A with hardened tungsten-carbide impeller to mitigate catalyst slurry abrasion and suppress vibration below 2.8 mm/s RMS under ISO 10816-3.');
+                        }}
+                        className="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded border border-slate-200 transition"
+                      >
+                        P-201A Impeller MOC
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDraftTitle('CDU-1 Column T-101 Emergency Depressurization Review');
+                          setDraftUnit('CDU-1');
+                          setDraftActionType('SHUTDOWN_PROCEDURE');
+                          setDraftPrompt('Review emergency trigger thresholds for ESD-1 on Column T-101 and pre-heat exchanger E-101 thermal bypass timing under SOP OPS-101.');
+                        }}
+                        className="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded border border-slate-200 transition"
+                      >
+                        CDU-1 ESD-1 Review
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDraftTitle('Site H2S Gas Monitor Sensor Calibration Schedule');
+                          setDraftUnit('REFINERY-WIDE');
+                          setDraftActionType('MOC_PROPOSAL');
+                          setDraftPrompt('Establish mandatory quarterly sensor calibration protocol for personal 4-gas detectors and fixed perimeter beacons under SOP HSE-001.');
+                        }}
+                        className="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded border border-slate-200 transition"
+                      >
+                        HSE Gas Monitor MOC
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Action Type</label>
+                      <select
+                        value={draftActionType}
+                        onChange={(e) => setDraftActionType(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-xs text-slate-800"
+                      >
+                        <option value="EQUIPMENT_MODIFICATION">EQUIPMENT_MODIFICATION</option>
+                        <option value="MOC_PROPOSAL">MOC_PROPOSAL</option>
+                        <option value="CHEMICAL_DOSING">CHEMICAL_DOSING</option>
+                        <option value="SHUTDOWN_PROCEDURE">SHUTDOWN_PROCEDURE</option>
+                        <option value="VENDOR_EVALUATION">VENDOR_EVALUATION</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">Plant Unit</label>
+                      <select
+                        value={draftUnit}
+                        onChange={(e) => setDraftUnit(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-xs text-slate-800 font-mono"
+                      >
+                        <option value="FCCU">FCCU</option>
+                        <option value="CDU-1">CDU-1</option>
+                        <option value="HCU">HCU</option>
+                        <option value="REFINERY-WIDE">REFINERY-WIDE</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Memorandum Title</label>
+                    <input
+                      type="text"
+                      value={draftTitle}
+                      onChange={(e) => setDraftTitle(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-xs text-slate-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Technical Scope & Justification</label>
+                    <textarea
+                      rows={3}
+                      value={draftPrompt}
+                      onChange={(e) => setDraftPrompt(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs text-slate-800 font-sans leading-relaxed"
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleDraftNote}
+                    disabled={draftLoading}
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold py-2.5 rounded transition flex items-center justify-center space-x-2 disabled:opacity-50"
+                  >
+                    {draftLoading ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Generating Grounded Draft...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Generate Formal Approval Note</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center space-x-1.5">
+                      <Clock className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Governance Queue ({approvals.length})</span>
+                    </h3>
+                    <div className="flex space-x-1 text-[10px]">
+                      {['ALL', 'PENDING', 'APPROVED'].map((f) => (
+                        <button
+                          key={f}
+                          onClick={() => setApprovalFilter(f)}
+                          className={`px-2 py-0.5 rounded font-mono font-medium ${
+                            approvalFilter === f ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {f}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
+                    {approvals
+                      .filter((a) => approvalFilter === 'ALL' || a.status === approvalFilter)
+                      .map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={() => {
+                            setSelectedApproval(item);
+                            setApprovalEngineerEdits(item.engineer_edits || item.draft_content);
+                            setApprovalReviewNotes(item.review_notes || '');
+                          }}
+                          className={`p-3 rounded border text-xs cursor-pointer transition ${
+                            selectedApproval?.id === item.id
+                              ? 'border-slate-900 bg-slate-50'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-bold text-slate-900 truncate max-w-[200px]">{item.title}</span>
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                item.status === 'APPROVED'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  : item.status === 'REJECTED'
+                                  ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                  : 'bg-amber-100 text-amber-800 border border-amber-200'
+                              }`}
+                            >
+                              {item.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                            <span>UNIT: {item.plant_unit}</span>
+                            <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-7">
+                {selectedApproval ? (
+                  <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 gap-2">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                            ID: {selectedApproval.id.substring(0, 8)}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                              selectedApproval.status === 'APPROVED'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : selectedApproval.status === 'REJECTED'
+                                ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                : 'bg-amber-100 text-amber-800 border border-amber-200'
+                            }`}
+                          >
+                            {selectedApproval.status}
+                          </span>
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900 mt-1">{selectedApproval.title}</h3>
+                        <p className="text-xs text-slate-500 font-mono">
+                          Unit: {selectedApproval.plant_unit} • Action: {selectedApproval.action_type}
+                        </p>
+                      </div>
+
+                      {selectedApproval.status === 'APPROVED' && (
+                        <a
+                          href={`${API_BASE}/governance/approvals/${selectedApproval.id}/export-pdf`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 rounded transition shadow-sm"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Export Signed PDF</span>
+                        </a>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Reviewer Edits & Formal Draft Content:
+                        </label>
+                        <span className="text-[10px] text-slate-400 font-mono">Editable by Process Engineer / Plant Manager</span>
+                      </div>
+                      <textarea
+                        rows={12}
+                        value={approvalEngineerEdits}
+                        onChange={(e) => setApprovalEngineerEdits(e.target.value)}
+                        disabled={selectedApproval.status === 'APPROVED'}
+                        className="w-full bg-slate-50 border border-slate-300 rounded p-3 text-xs font-mono text-slate-800 leading-relaxed focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">
+                        Reviewer Sign-Off Notes / Operational Directives:
+                      </label>
+                      <input
+                        type="text"
+                        value={approvalReviewNotes}
+                        onChange={(e) => setApprovalReviewNotes(e.target.value)}
+                        disabled={selectedApproval.status === 'APPROVED'}
+                        placeholder="e.g. Approved subject to mechanical seal pressure test and PTW check."
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+                      />
+                    </div>
+
+                    {selectedApproval.status === 'APPROVED' ? (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 font-mono text-xs text-emerald-900 space-y-1">
+                        <div className="flex items-center space-x-2 font-bold text-emerald-800">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          <span>CRYPTOGRAPHICALLY SIGNED & VERIFIED</span>
+                        </div>
+                        <div className="text-[11px] text-emerald-800 truncate">
+                          Signature SHA-256: {selectedApproval.signature_hash}
+                        </div>
+                        <div className="text-[11px] text-emerald-700">
+                          Signatory: {selectedApproval.reviewer_id} • Signed UTC: {new Date(selectedApproval.reviewed_at).toUTCString()}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-3 pt-2">
+                        <button
+                          onClick={() => handleApprovalAction('APPROVE')}
+                          disabled={approvalActionLoading}
+                          className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold py-2.5 rounded transition flex items-center justify-center space-x-2 shadow-sm disabled:opacity-50"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Sign & Approve (Cryptographic Seal)</span>
+                        </button>
+                        <button
+                          onClick={() => handleApprovalAction('REJECT')}
+                          disabled={approvalActionLoading}
+                          className="bg-white border border-rose-300 hover:bg-rose-50 text-rose-700 text-xs font-bold px-4 py-2.5 rounded transition flex items-center justify-center space-x-2 disabled:opacity-50"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          <span>Reject</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-white border border-slate-200 rounded-lg p-12 text-center text-slate-400 space-y-3">
+                    <FileSignature className="w-10 h-10 mx-auto text-slate-300" />
+                    <p className="text-sm font-medium">Select an approval request from the queue to review, edit, and sign off.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

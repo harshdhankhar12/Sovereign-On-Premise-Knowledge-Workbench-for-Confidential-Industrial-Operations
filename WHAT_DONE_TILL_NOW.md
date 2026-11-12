@@ -87,6 +87,17 @@ Populates the sovereign knowledge workbench with an authentic, production-grade 
 * **Pre-Seeded Cryptographic Audit Trail:** Initialized the SHA-256 tamper-evident hash chain with verified system events, document ingestions, and calculation checks, passing 100% cryptographic integrity verification from genesis to the latest record.
 * **100% End-to-End Verification Suite:** Validated with an automated test suite verifying row-level clearance enforcement, P&ID spatial connectivity tracing, physics sandbox formula verification, cryptographic audit chain integrity, and multi-agent document citation chat.
 
+### 9. Automated Engineering Drafting, Human-in-the-Loop Governance & ROI Metrics Engine
+Empowers refinery engineers to automate the creation of formal technical memoranda, Management of Change (MOC) notes, and equipment modification proposals with mandatory human sign-off, digital cryptographic signatures, watermarked PDF export, and plant-wide ROI tracking.
+
+* **Local LLM Technical Note Generator:** Generates structured, professional technical memoranda across five standardized refinery sections (Executive Summary, Technical Justification & SOP Grounding, Mathematical & Hydraulic Validation, HSE & Safety Risk Mitigation, Implementation Sequence) grounded strictly in cited SOPs and verified sandbox physics using local `llama3.2:1b`.
+* **Human-in-the-Loop Governance Queue:** Maintains an auditable approval lifecycle (`PENDING` -> `APPROVED` / `REJECTED`) where lead engineers and plant managers can review original AI drafts, edit/override text inline, and mandate specific conditions of approval.
+* **Tamper-Evident SHA-256 Digital Signature:** Computes an immutable SHA-256 digital signature hash linking the approval ID, reviewer credentials, final text, and UTC timestamp, automatically registering an `APPROVAL_SIGN_OFF` event in the cryptographic audit ledger.
+* **Official Watermarked PDF Export:** Programmatically renders an official 1-page/2-page branded technical memorandum featuring the MRPL header banner, reference numbers, unit metadata, approved text blocks, and a cryptographic verification seal box ready for printing or filing.
+* **Plant-Wide Productivity & ROI Telemetry:** Tracks turnaround duration comparing workbench automation (<2 seconds) against manual engineering drafting baselines (45 minutes per note), dynamically aggregating cumulative engineer-hours saved, estimated cost savings in INR (@ ₹1,500/hr baseline rate), and speedup acceleration percentage (~98–100%).
+* **Interactive Frontend Governance Console:** Adds a dedicated 6th tab to the Next.js workbench dashboard featuring real-time ROI metric cards, quick preset drafting buttons, filterable approval queues with live pending badges, side-by-side review panels, and one-click PDF downloads.
+
+
 
 
 
