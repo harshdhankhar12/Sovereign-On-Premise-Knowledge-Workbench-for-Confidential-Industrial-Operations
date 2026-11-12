@@ -57,3 +57,4 @@ class SecureSearchResponse(BaseModel):
     effective_clearances: List[str]
     total_matches: int
     results: List[SearchResultItem]
+

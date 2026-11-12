@@ -172,3 +172,4 @@ async def search_documents_secure(
         total_matches=len(results),
         results=results,
     )
+
