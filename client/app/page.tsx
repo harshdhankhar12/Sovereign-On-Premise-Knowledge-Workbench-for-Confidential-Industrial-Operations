@@ -40,7 +40,9 @@ import {
   FileCheck2,
   UserCheck,
   GitBranch,
-  BookOpen
+  BookOpen,
+  Trash2,
+  History
 } from 'lucide-react';
 import Link from 'next/link';
 import FormattedResponse from './components/FormattedResponse';
@@ -57,6 +59,45 @@ const ROLES: { id: RoleType; label: string; clearance: string[] }[] = [
   { id: 'SAFETY_AUDITOR', label: 'Safety Auditor', clearance: ['AUDIT_FULL'] },
 ];
 
+function ExecutiveSummary({
+  why,
+  what,
+  how,
+}: {
+  why: string;
+  what: string;
+  how: string;
+}) {
+  return (
+    <div className="bg-slate-900 text-white rounded-lg p-4 sm:p-5 shadow-sm border border-slate-800">
+      <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">
+          Executive Summary &amp; Quick Guide
+        </span>
+        <span className="text-[10px] font-mono text-emerald-400 flex items-center">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+          Air-Gapped Operation
+        </span>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div className="space-y-1 bg-slate-800/90 p-3 rounded border border-slate-700/80">
+          <div className="font-bold text-amber-400 uppercase text-[11px] tracking-wide">Why This Exists</div>
+          <p className="text-slate-300 leading-relaxed">{why}</p>
+        </div>
+        <div className="space-y-1 bg-slate-800/90 p-3 rounded border border-slate-700/80">
+          <div className="font-bold text-emerald-400 uppercase text-[11px] tracking-wide">What It Does</div>
+          <p className="text-slate-300 leading-relaxed">{what}</p>
+        </div>
+        <div className="space-y-1 bg-slate-800/90 p-3 rounded border border-slate-700/80">
+          <div className="font-bold text-cyan-400 uppercase text-[11px] tracking-wide">How To Use It</div>
+          <p className="text-slate-300 leading-relaxed whitespace-pre-line">{how}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export default function WorkbenchDashboard() {
   const [activeTab, setActiveTab] = useState<'chat' | 'docs' | 'sandbox' | 'drawings' | 'audit' | 'governance' | 'telemetry' | 'investigation'>('chat');
   const [currentRole, setCurrentRole] = useState<RoleType>('PROCESS_ENGINEER');
@@ -71,7 +112,67 @@ export default function WorkbenchDashboard() {
   const [chatResponse, setChatResponse] = useState<any>(null);
   const [liveSteps, setLiveSteps] = useState<any[]>([]);
   const [taskProgress, setTaskProgress] = useState<number>(0);
+  const [chatHistory, setChatHistory] = useState<any[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    try {
+      const savedTab = localStorage.getItem('sovereign_tab');
+      if (savedTab && ['chat', 'docs', 'sandbox', 'drawings', 'audit', 'governance', 'telemetry', 'investigation'].includes(savedTab)) {
+        setActiveTab(savedTab as any);
+      }
+      const savedRole = localStorage.getItem('sovereign_role');
+      if (savedRole && ROLES.some(r => r.id === savedRole)) {
+        setCurrentRole(savedRole as RoleType);
+      }
+      const savedHistory = localStorage.getItem('sovereign_chat_history');
+      if (savedHistory) {
+        setChatHistory(JSON.parse(savedHistory));
+      }
+      const savedLastDoc = localStorage.getItem('sovereign_last_uploaded_doc');
+      if (savedLastDoc) {
+        setLastUploadedDoc(JSON.parse(savedLastDoc));
+      }
+    } catch {}
+  }, []);
+
+  const handleSelectTab = (tab: 'chat' | 'docs' | 'sandbox' | 'drawings' | 'audit' | 'governance' | 'telemetry' | 'investigation') => {
+    setActiveTab(tab);
+    try {
+      localStorage.setItem('sovereign_tab', tab);
+    } catch {}
+  };
+
+  const handleSelectRole = (role: RoleType) => {
+    setCurrentRole(role);
+    try {
+      localStorage.setItem('sovereign_role', role);
+    } catch {}
+  };
+
+  const saveChatToHistory = (entry: any) => {
+    setChatHistory((prev) => {
+      const filtered = prev.filter(e => e.prompt !== entry.prompt);
+      const updated = [entry, ...filtered].slice(0, 20);
+      try {
+        localStorage.setItem('sovereign_chat_history', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const clearChatHistory = () => {
+    setChatHistory([]);
+    try {
+      localStorage.removeItem('sovereign_chat_history');
+    } catch {}
+  };
+
+  const handleSelectHistoryItem = (item: any) => {
+    setChatPrompt(item.prompt);
+    if (item.unit) setChatUnit(item.unit);
+    if (item.response) setChatResponse(item.response);
+  };
 
   const [searchQuery, setSearchQuery] = useState<string>('platinum catalyst synthesis and column trip criteria');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -233,6 +334,14 @@ export default function WorkbenchDashboard() {
               setTaskProgress(100);
               setChatResponse(msg.data);
               setChatLoading(false);
+              saveChatToHistory({
+                id: Date.now().toString(),
+                prompt: chatPrompt,
+                unit: chatUnit,
+                role: currentRole,
+                timestamp: new Date().toLocaleTimeString(),
+                response: msg.data,
+              });
               ws.close();
             } else if (etype === 'TASK_FAILED') {
               setChatLoading(false);
@@ -266,6 +375,14 @@ export default function WorkbenchDashboard() {
         const data = await res.json();
         setChatResponse(data);
         setTaskProgress(100);
+        saveChatToHistory({
+          id: Date.now().toString(),
+          prompt: chatPrompt,
+          unit: chatUnit,
+          role: currentRole,
+          timestamp: new Date().toLocaleTimeString(),
+          response: data,
+        });
       } catch (err: any) {
         setChatResponse({ error: err.message });
       } finally {
@@ -331,6 +448,9 @@ export default function WorkbenchDashboard() {
       if (res.ok) {
         const data = await res.json();
         setLastUploadedDoc(data);
+        try {
+          localStorage.setItem('sovereign_last_uploaded_doc', JSON.stringify(data));
+        } catch {}
         setUploadStatus(`Uploaded: ${data.title} (${data.confidentiality_level}) - ${data.versions?.[0]?.metadata?.total_chunks || 'Chunks'} generated.`);
         await fetchIngestedDocs();
       } else {
@@ -799,7 +919,7 @@ export default function WorkbenchDashboard() {
                 <span className="text-xs text-slate-500 font-medium hidden sm:inline">Role:</span>
                 <select
                   value={currentRole}
-                  onChange={(e) => setCurrentRole(e.target.value as RoleType)}
+                  onChange={(e) => handleSelectRole(e.target.value as RoleType)}
                   className="bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-medium text-slate-800 hover:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900 shadow-sm"
                 >
                   {ROLES.map((r) => (
@@ -859,7 +979,7 @@ export default function WorkbenchDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8 overflow-x-auto">
             <button
-              onClick={() => setActiveTab('chat')}
+              onClick={() => handleSelectTab('chat')}
               className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${
                 activeTab === 'chat'
                   ? 'border-slate-900 text-slate-900'
@@ -867,11 +987,11 @@ export default function WorkbenchDashboard() {
               }`}
             >
               <MessageSquareText className="w-4 h-4" />
-              <span>Multi-Agent Chat</span>
+              <span>Ask Refinery AI</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('docs')}
+              onClick={() => handleSelectTab('docs')}
               className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${
                 activeTab === 'docs'
                   ? 'border-slate-900 text-slate-900'
@@ -879,11 +999,11 @@ export default function WorkbenchDashboard() {
               }`}
             >
               <FileText className="w-4 h-4" />
-              <span>Document Intelligence & RAG</span>
+              <span>Upload &amp; Search Documents</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('sandbox')}
+              onClick={() => handleSelectTab('sandbox')}
               className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${
                 activeTab === 'sandbox'
                   ? 'border-slate-900 text-slate-900'
@@ -891,11 +1011,11 @@ export default function WorkbenchDashboard() {
               }`}
             >
               <Calculator className="w-4 h-4" />
-              <span>Physics Sandbox & Math</span>
+              <span>Industrial Physics Calculator</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('drawings')}
+              onClick={() => handleSelectTab('drawings')}
               className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${
                 activeTab === 'drawings'
                   ? 'border-slate-900 text-slate-900'
@@ -903,11 +1023,11 @@ export default function WorkbenchDashboard() {
               }`}
             >
               <Layers className="w-4 h-4" />
-              <span>P&ID Schematic Explorer</span>
+              <span>P&amp;ID Drawing Explorer</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('audit')}
+              onClick={() => handleSelectTab('audit')}
               className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${
                 activeTab === 'audit'
                   ? 'border-slate-900 text-slate-900'
@@ -915,11 +1035,11 @@ export default function WorkbenchDashboard() {
               }`}
             >
               <ShieldAlert className="w-4 h-4" />
-              <span>Cryptographic Audit Ledger</span>
+              <span>Safety Audit Ledger</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('governance')}
+              onClick={() => handleSelectTab('governance')}
               className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${
                 activeTab === 'governance'
                   ? 'border-slate-900 text-slate-900'
@@ -927,7 +1047,7 @@ export default function WorkbenchDashboard() {
               }`}
             >
               <ClipboardCheck className="w-4 h-4" />
-              <span>Drafting & Governance</span>
+              <span>Drafting, Review &amp; MOC</span>
               {approvals.filter(a => a.status === 'PENDING').length > 0 && (
                 <span className="bg-amber-100 text-amber-800 text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ml-1 border border-amber-200">
                   {approvals.filter(a => a.status === 'PENDING').length}
@@ -936,7 +1056,7 @@ export default function WorkbenchDashboard() {
             </button>
 
             <button
-              onClick={() => setActiveTab('telemetry')}
+              onClick={() => handleSelectTab('telemetry')}
               className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${
                 activeTab === 'telemetry'
                   ? 'border-slate-900 text-slate-900'
@@ -944,7 +1064,7 @@ export default function WorkbenchDashboard() {
               }`}
             >
               <Activity className="w-4 h-4" />
-              <span>DCS Telemetry & Incidents</span>
+              <span>Live Plant Telemetry &amp; Emergency Lists</span>
               {activeAlarms.length > 0 && (
                 <span className="bg-rose-100 text-rose-800 text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ml-1 border border-rose-200 animate-pulse">
                   {activeAlarms.length} ALARM{activeAlarms.length > 1 ? 'S' : ''}
@@ -953,7 +1073,7 @@ export default function WorkbenchDashboard() {
             </button>
 
             <button
-              onClick={() => setActiveTab('investigation')}
+              onClick={() => handleSelectTab('investigation')}
               className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${
                 activeTab === 'investigation'
                   ? 'border-slate-900 text-slate-900'
@@ -961,7 +1081,7 @@ export default function WorkbenchDashboard() {
               }`}
             >
               <FileCheck2 className="w-4 h-4" />
-              <span>Shift Handover &amp; 5-Why RCA</span>
+              <span>Shift Handover &amp; 5-Why Investigation</span>
             </button>
           </div>
         </div>
@@ -969,7 +1089,15 @@ export default function WorkbenchDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
         {activeTab === 'chat' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-6">
+            <ExecutiveSummary
+              why="Refinery engineers cannot paste confidential operating limits, catalyst recipes, or emergency procedures into public cloud AI like ChatGPT without severe security and intellectual property risks."
+              what="Runs local on-premise AI (llama3.2:1b) grounded only in verified plant documents. Specialised tools execute exact math formulas and trace P&IDs without hallucinating."
+              how={`1. Click an active document or preset question below.
+2. Click "Ask Sovereign AI" to stream reasoning and citations.
+3. Revisit any past answers anytime from the saved Chat History.`}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
               <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
@@ -1234,12 +1362,68 @@ export default function WorkbenchDashboard() {
                   All calculations and AI inference run locally on this server. Zero outbound internet requests are emitted, ensuring compliance with MRPL confidentiality standards.
                 </p>
               </div>
+
+              <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center">
+                    <History className="w-4 h-4 mr-2 text-slate-700" />
+                    <span>Saved Chat History ({chatHistory.length})</span>
+                  </h3>
+                  {chatHistory.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearChatHistory}
+                      className="text-[10px] font-semibold text-rose-700 hover:text-rose-900 flex items-center space-x-1"
+                      title="Clear local browser chat history"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Clear</span>
+                    </button>
+                  )}
+                </div>
+
+                {chatHistory.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">
+                    No questions saved yet. Asked questions and verified responses automatically persist in browser memory.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {chatHistory.map((item: any) => (
+                      <div
+                        key={item.id}
+                        onClick={() => handleSelectHistoryItem(item)}
+                        className="p-2.5 rounded border border-slate-200 hover:border-slate-400 bg-slate-50 hover:bg-slate-100 transition cursor-pointer text-xs space-y-1"
+                      >
+                        <div className="font-semibold text-slate-800 line-clamp-2 leading-snug">
+                          {item.prompt}
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 pt-0.5">
+                          <span>{item.unit || 'CDU'} • {item.role}</span>
+                          <span>{item.timestamp}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="text-[10px] font-mono text-slate-400 text-center pt-1 border-t border-slate-100">
+                  Stored securely in browser localStorage
+                </div>
+              </div>
             </div>
           </div>
+        </div>
         )}
 
         {activeTab === 'docs' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-6">
+            <ExecutiveSummary
+              why="Refinery manuals, emergency procedures, and equipment catalogs must remain strictly confidential and searchable offline without uploading documents to external clouds."
+              what="Extracts text from uploaded PDFs locally, generates vector embeddings with on-premise nomic-embed-text, and performs role-governed semantic search with zero egress."
+              how={`1. Select a PDF to upload and choose access clearance.
+2. Type search keywords to find exact procedure steps.
+3. Click "Chat with Procedure" to query it directly in Tab 1.`}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
               <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
                 <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center">
@@ -1439,10 +1623,19 @@ export default function WorkbenchDashboard() {
               </div>
             </div>
           </div>
+        </div>
         )}
 
         {activeTab === 'sandbox' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            <ExecutiveSummary
+              why="Neural network LLMs hallucinate numbers and cannot be trusted for critical engineering calculations where an arithmetic mistake could rupture pipes or damage reactors."
+              what="Routes heat exchanger, pump power, and fluid dynamics equations through a deterministic Python AST sandbox that verifies math against physical laws and vendor specs."
+              how={`1. Select a formula (Heat Exchanger, Pump, Friction).
+2. Input temperatures, surface areas, and vendor duty.
+3. Click "Verify Against Physical Laws" for certified math.`}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
               <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center">
                 <Calculator className="w-4 h-4 mr-2 text-slate-700" />
@@ -1643,10 +1836,19 @@ export default function WorkbenchDashboard() {
               )}
             </div>
           </div>
+        </div>
         )}
 
         {activeTab === 'drawings' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-6">
+            <ExecutiveSummary
+              why="During plant emergencies, tracing isolation valves and instrument loops across complex engineering blueprints by hand takes valuable time and risks human oversight."
+              what="Reads P&ID diagrams locally, detects equipment tags, and maps the connected safety network and isolation boundary around any pump, column, or valve."
+              how={`1. Upload a P&ID schematic or use pre-loaded CDU.
+2. Enter target equipment tag (e.g. P-204A) and radius.
+3. Click "Trace Connected Network" to map valves.`}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
               <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
@@ -1772,10 +1974,19 @@ export default function WorkbenchDashboard() {
               </div>
             </div>
           </div>
+        </div>
         )}
 
         {activeTab === 'audit' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            <ExecutiveSummary
+              why="Refinery safety audits under OISD, OSHA, and PESO standards require legally verifiable proof that safety checks, calculations, and approvals were never altered or backdated."
+              what="Maintains a cryptographic SHA-256 hash-chained event ledger in PostgreSQL. Every query, calculation, and approval creates an immutable sequential block."
+              how={`1. Review timestamped events and parent-block hashes.
+2. Click "Verify Chain Integrity" to run cryptographic audit.
+3. Inspect verification status proving zero tampering.`}
+            />
+            <div className="space-y-4">
             <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
@@ -1879,10 +2090,18 @@ export default function WorkbenchDashboard() {
               </div>
             </div>
           </div>
+        </div>
         )}
 
         {activeTab === 'governance' && (
           <div className="space-y-6">
+            <ExecutiveSummary
+              why="Uncontrolled equipment changes cause catastrophic refinery incidents. Formal Management of Change (MOC) requires hazard reviews, engineering revisions, and management approval."
+              what="Synthesizes formal MOC notes and SOP procedures with safety checklists, tracks pending manager approvals, calculates engineering hours saved, and exports official sign-off PDFs."
+              how={`1. Draft a proposed plant modification (e.g. Pump Impeller).
+2. Review auto-generated hazard checklist and notes.
+3. Switch to Plant Manager role to approve & download PDF.`}
+            />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
                 <div className="flex items-center justify-between text-slate-500 mb-1 text-xs">
@@ -2238,6 +2457,13 @@ export default function WorkbenchDashboard() {
 
         {activeTab === 'telemetry' && (
           <div className="space-y-6">
+            <ExecutiveSummary
+              why="During control room alarms, operators under stress must immediately locate the exact emergency SOP without flipping through 500-page paper binders."
+              what="Simulates live plant sensors across CDU, FCCU, and HCU. When operating thresholds are breached, it automatically cites the governing SOP and builds an interactive checklist."
+              how={`1. Click a fault scenario (e.g. Furnace Overheat).
+2. Watch live sensor gauge spike with cited emergency SOP.
+3. Click "Sign-Off Step" as each action is completed.`}
+            />
             <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center space-x-3">
@@ -2614,6 +2840,13 @@ export default function WorkbenchDashboard() {
 
         {activeTab === 'investigation' && (
           <div className="space-y-6">
+            <ExecutiveSummary
+              why="Incomplete shift handovers are a leading cause of industrial accidents worldwide, and incident investigations often stop at operator error instead of fixing the root cause."
+              what="Synthesizes 8-hour shift turnover logs directly from the audit ledger with dual signatures, and runs 5-Why root cause investigations with assigned CAPA deadlines."
+              how={`1. Click "Synthesize Shift Handover" & export signed PDF.
+2. Pick an incident preset (e.g. Slurry Pump Trip).
+3. Click "Run 5-Why Investigation" & review CAPA deadlines.`}
+            />
             <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center space-x-3">

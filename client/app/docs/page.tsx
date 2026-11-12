@@ -29,14 +29,14 @@ export default function DocumentationPage() {
   const navItems = [
     { id: 'overview', label: '1. System Overview & Air-Gap Mandate', icon: ShieldCheck },
     { id: 'quickstart', label: '2. Offline Launch & Verification', icon: Terminal },
-    { id: 'tab1-chat', label: 'Tab 1: Sovereign Multi-Agent Chat', icon: MessageSquareText },
-    { id: 'tab2-docs', label: 'Tab 2: Document Intelligence (PDF Upload)', icon: FileText },
-    { id: 'tab3-sandbox', label: 'Tab 3: Deterministic Physics Sandbox', icon: Calculator },
-    { id: 'tab4-pid', label: 'Tab 4: P&ID Schematic Explorer', icon: Layers },
-    { id: 'tab5-audit', label: 'Tab 5: Cryptographic Audit Ledger', icon: ShieldAlert },
-    { id: 'tab6-governance', label: 'Tab 6: Drafting, Governance & MOC', icon: ClipboardCheck },
-    { id: 'tab7-telemetry', label: 'Tab 7: DCS Telemetry & Live Incidents', icon: Activity },
-    { id: 'tab8-investigation', label: 'Tab 8: Shift Handover & 5-Why RCA', icon: FileCheck2 },
+    { id: 'tab1-chat', label: 'Tab 1: Ask Refinery AI (Multi-Agent Chat)', icon: MessageSquareText },
+    { id: 'tab2-docs', label: 'Tab 2: Upload & Search Documents', icon: FileText },
+    { id: 'tab3-sandbox', label: 'Tab 3: Industrial Physics Calculator', icon: Calculator },
+    { id: 'tab4-pid', label: 'Tab 4: P&ID Drawing Explorer', icon: Layers },
+    { id: 'tab5-audit', label: 'Tab 5: Safety Audit Ledger', icon: ShieldAlert },
+    { id: 'tab6-governance', label: 'Tab 6: Drafting, Review & MOC Notes', icon: ClipboardCheck },
+    { id: 'tab7-telemetry', label: 'Tab 7: Live DCS Telemetry & Emergency Lists', icon: Activity },
+    { id: 'tab8-investigation', label: 'Tab 8: Shift Handover & 5-Why Investigation', icon: FileCheck2 },
   ];
 
   return (
@@ -120,22 +120,37 @@ export default function DocumentationPage() {
                   <p className="text-xs text-slate-500 font-mono mt-0.5">Problem Statement: SIH26117 • Refinery Operations Division</p>
                 </div>
 
-                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
-                  <p>
-                    The <strong>Sovereign On-Premise Knowledge Workbench</strong> is engineered specifically for confidential industrial operations at Mangalore Refinery and Petrochemicals Limited (MRPL). It solves the critical operational risk of leaking sensitive refinery operating limits, proprietary catalyst kinetics, and plant schematics to external commercial cloud AI endpoints.
-                  </p>
-                  <p>
-                    Every query, document chunk, vector embedding, calculation run, and approval note executes <strong>100% locally on-premise</strong> with mathematical zero network egress.
-                  </p>
+                <div className="bg-slate-900 text-white rounded-lg p-5 space-y-3">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Executive Summary</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-amber-400 uppercase text-[11px]">Why This Exists</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Refineries handle trade secrets and critical national infrastructure. Sending queries to commercial cloud AI leaks formulas and schematics.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-emerald-400 uppercase text-[11px]">What It Does</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Runs complete AI models, vector search, physics math, and audit logging 100% locally on-premise with zero external internet traffic.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-cyan-400 uppercase text-[11px]">How To Verify</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Turn off laptop WiFi. Everything continues working smoothly. An automated audit check proves exactly 0 bytes leave the machine.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                   <div className="bg-slate-50 border border-slate-200 rounded p-3 text-xs space-y-1">
                     <div className="font-bold text-slate-900 flex items-center space-x-1.5">
                       <Cpu className="w-3.5 h-3.5 text-slate-700" />
                       <span>Local Inference</span>
                     </div>
-                    <p className="text-slate-600">llama3.2:1b &amp; nomic-embed-text running through local Ollama on 127.0.0.1:11434 with zero cloud fallbacks.</p>
+                    <p className="text-slate-600">llama3.2:1b &amp; nomic-embed-text running through local Ollama with zero internet dependency.</p>
                   </div>
 
                   <div className="bg-slate-50 border border-slate-200 rounded p-3 text-xs space-y-1">
@@ -143,7 +158,7 @@ export default function DocumentationPage() {
                       <Database className="w-3.5 h-3.5 text-slate-700" />
                       <span>PostgreSQL &amp; pgvector</span>
                     </div>
-                    <p className="text-slate-600">768-dimensional local vector indexing with HNSW cosine similarity and Row-Level Security clearance tiers.</p>
+                    <p className="text-slate-600">768-dimensional local vector indexing with clearance security levels (Public, Internal, Restricted, Secret).</p>
                   </div>
 
                   <div className="bg-slate-50 border border-slate-200 rounded p-3 text-xs space-y-1">
@@ -161,7 +176,7 @@ export default function DocumentationPage() {
               <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-6">
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">2. Offline Launch &amp; Air-Gap Verification</h2>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">How to boot and prove zero network egress to evaluators</p>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">Quick instructions to start and prove zero-egress to evaluators</p>
                 </div>
 
                 <div className="space-y-4">
@@ -178,15 +193,15 @@ export default function DocumentationPage() {
                   </div>
                   <p className="text-xs text-slate-600">Open your browser at <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">http://localhost:3000</code>.</p>
 
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">Step 3: Proving Zero External Egress</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">Step 3: Proving Zero External Internet Traffic</h3>
                   <div className="bg-slate-50 border border-slate-200 rounded p-4 text-xs space-y-2">
                     <p className="text-slate-700">1. Disconnect laptop WiFi / Ethernet completely.</p>
-                    <p className="text-slate-700">2. In a separate terminal, execute the automated air-gap verification script:</p>
+                    <p className="text-slate-700">2. Run the automated air-gap test suite:</p>
                     <div className="bg-slate-900 text-slate-100 rounded p-2.5 font-mono text-xs">
                       python scripts/verify_air_gap_egress.py
                     </div>
                     <p className="text-slate-600">
-                      This script tests raw socket outbound calls to external cloud AI endpoints (intercepted and blocked), triggers malicious AST sandbox code (intercepted), and audits the database to verify exactly <strong>0 egress bytes</strong>.
+                      The test attempts outbound socket calls (blocked), triggers dangerous sandbox syscalls (blocked), and verifies the database ledger records exactly <strong>0 egress bytes</strong>.
                     </p>
                   </div>
                 </div>
@@ -194,193 +209,321 @@ export default function DocumentationPage() {
             )}
 
             {activeSection === 'tab1-chat' && (
-              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
+              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-5">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Tab 1: Sovereign Multi-Agent Inquiry (Chat)</h2>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">Offline conversational intelligence with deterministic reasoning timelines</p>
+                  <h2 className="text-lg font-bold text-slate-900">Tab 1: Ask Refinery AI (Sovereign Multi-Agent Chat)</h2>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">Natural language questions grounded strictly in refinery procedures</p>
                 </div>
 
-                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
+                <div className="bg-slate-900 text-white rounded-lg p-5 space-y-3">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Executive Summary</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-amber-400 uppercase text-[11px]">Why This Exists</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Refinery operators cannot afford to spend 20 minutes flipping through 300-page paper binders during an emergency column trip.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-emerald-400 uppercase text-[11px]">What It Does</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Reads indexed SOPs page-by-page, classifies the question, runs physics if math is needed, and provides step-by-step instructions with exact citations.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-cyan-400 uppercase text-[11px]">How To Use It</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        1. Click an active document pill or preset.<br />
+                        2. Click &quot;Dispatch Query&quot;.<br />
+                        3. Read the verified answer and check citations.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3 pt-2">
                   <p>
-                    <strong>What it does:</strong> Allows plant engineers to query complex operational procedures, shutdown protocols, and engineering formulas in plain English.
+                    <strong>What data the AI reads:</strong> Above the chat prompt, the <em>&quot;Active Grounding Documents&quot;</em> toolbar shows all indexed files in PostgreSQL (<code className="font-mono text-xs">MRPL-SOP-OPS-101</code>, <code className="font-mono text-xs">MRPL-SOP-MEC-201</code>, <code className="font-mono text-xs">MRPL-SOP-HSE-001</code>, <code className="font-mono text-xs">MRPL-SPEC-HCK-901</code>, plus any newly uploaded PDFs).
                   </p>
                   <p>
-                    <strong>How to use:</strong> Select an operational query preset (e.g. <em>&quot;Under SOP ESD-101, what are the mandatory steps to isolate column C-101?&quot;</em>) or type a custom question, then click <strong>Run Sovereign Multi-Agent Inquiry</strong>.
-                  </p>
-                  <p>
-                    <strong>What happens behind the scenes:</strong>
+                    <strong>Live Reasoning Timeline:</strong> The right panel displays the 5 stages as they execute live via WebSockets:
                   </p>
                   <ul className="list-disc pl-5 space-y-1 text-xs text-slate-600">
-                    <li><strong>Intent Classification:</strong> Classifies prompt into SOP inquiry, physics calculation, or vendor verification.</li>
-                    <li><strong>Vector Search:</strong> Queries 768-dimensional embeddings in PostgreSQL with pgvector, constrained by your active clearance level.</li>
-                    <li><strong>Math Sandbox:</strong> If physics formulas or claims are detected, routes them to the isolated calculation sandbox.</li>
-                    <li><strong>Synthesis:</strong> Local llama3.2:1b formats the final answer citing exact document names and page numbers.</li>
+                    <li><strong>Intent Classifier:</strong> Checks whether the question asks for a procedure, calculation, or vendor check.</li>
+                    <li><strong>Vector Retrieval:</strong> Finds relevant paragraphs matching your security clearance.</li>
+                    <li><strong>Math Sandbox:</strong> Runs deterministic formulas if numbers are detected.</li>
+                    <li><strong>Cross-Verifier:</strong> Confirms results obey physical engineering limits.</li>
+                    <li><strong>Report Synthesis:</strong> Formats clean answers with bold tags, bullet points, and exact page citations.</li>
                   </ul>
                 </div>
               </div>
             )}
 
             {activeSection === 'tab2-docs' && (
-              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
+              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-5">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Tab 2: Document Intelligence &amp; Vector RAG (PDF Upload)</h2>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">Where confidential SOPs, vendor manuals, and inspection sheets are ingested</p>
+                  <h2 className="text-lg font-bold text-slate-900">Tab 2: Upload &amp; Search Documents (Document Intelligence)</h2>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">Where confidential SOPs and vendor manuals are indexed and searched</p>
                 </div>
 
-                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
+                <div className="bg-slate-900 text-white rounded-lg p-5 space-y-3">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Executive Summary</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-amber-400 uppercase text-[11px]">Why This Exists</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Refineries have thousands of confidential procedures across different units. Unrestricted access risks trade secrets, while lost files delay operations.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-emerald-400 uppercase text-[11px]">What It Does</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Ingests PDFs page-by-page, deduplicates with SHA-256 hashes, creates local 768-dim embeddings, and enforces clearance levels during search.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-cyan-400 uppercase text-[11px]">How To Use It</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        1. Select a PDF file and clearance level.<br />
+                        2. Click &quot;Upload &amp; Index&quot;.<br />
+                        3. Click &quot;Chat with Document&quot; to ask questions immediately.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3 pt-2">
                   <p>
-                    <strong>Where to upload PDFs:</strong> Use the drag-and-drop file uploader at the top of Tab 2.
+                    <strong>Clearance Levels Explained:</strong>
                   </p>
+                  <ul className="list-disc pl-5 space-y-1 text-xs text-slate-600">
+                    <li><code className="font-mono font-bold text-slate-800">PUBLIC:</code> General safety orientation, muster stations, PPE guidelines. Accessible by everyone.</li>
+                    <li><code className="font-mono font-bold text-slate-800">INTERNAL:</code> Mechanical maintenance SOPs, pump switchovers, seal barrier checks.</li>
+                    <li><code className="font-mono font-bold text-slate-800">RESTRICTED:</code> Unit shutdown protocols, furnace trips, emergency bypass sequences.</li>
+                    <li><code className="font-mono font-bold text-slate-800">SECRET:</code> Proprietary catalyst kinetic models and reaction yield optimization formulas.</li>
+                  </ul>
                   <p>
-                    <strong>Step-by-step ingestion:</strong>
-                  </p>
-                  <ol className="list-decimal pl-5 space-y-1 text-xs text-slate-600">
-                    <li>Select a technical PDF from your laptop (e.g. from <code className="bg-slate-100 px-1 rounded font-mono">c:\capstone\uploads</code>).</li>
-                    <li>Select the target Plant Unit (e.g. <code className="font-mono">CDU</code>, <code className="font-mono">FCCU</code>, <code className="font-mono">HCU</code>).</li>
-                    <li>Assign the Confidentiality Clearance Tier: <code className="font-mono">PUBLIC</code>, <code className="font-mono">INTERNAL</code>, <code className="font-mono">RESTRICTED</code>, or <code className="font-mono">SECRET</code>.</li>
-                    <li>Click <strong>Ingest &amp; Vectorize Document</strong>.</li>
-                  </ol>
-                  <p>
-                    <strong>What happens:</strong> The server computes a SHA-256 hash to deduplicate files, parses pages via PyMuPDF, extracts text chunks, embeds them locally via <code className="font-mono">nomic-embed-text</code>, and creates HNSW vector indices in PostgreSQL.
-                  </p>
-                  <p>
-                    <strong>Row-Level Security:</strong> Test searching for <em>&quot;catalyst kinetics&quot;</em> as an Operator (0 results returned) vs as a Plant Manager (secret SOP chunks unlocked).
+                    <strong>Testing Clearance Gates:</strong> Try searching for <em>&quot;catalyst kinetics&quot;</em> as an Operator (0 results returned). Then switch your role to Plant Manager in the header—the secret chunks unlock immediately!
                   </p>
                 </div>
               </div>
             )}
 
             {activeSection === 'tab3-sandbox' && (
-              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
+              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-5">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Tab 3: Deterministic Physics Sandbox</h2>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">Mathematically verified engineering calculations without LLM hallucinations</p>
+                  <h2 className="text-lg font-bold text-slate-900">Tab 3: Industrial Physics Calculator (Math Sandbox)</h2>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">Real mathematical engineering calculations with zero hallucinations</p>
                 </div>
 
-                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
+                <div className="bg-slate-900 text-white rounded-lg p-5 space-y-3">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Executive Summary</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-amber-400 uppercase text-[11px]">Why This Exists</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        LLMs guess and hallucinate numbers. In a refinery, trusting a fake heat duty or pump kW could blow a seal or cause a thermal runaway.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-emerald-400 uppercase text-[11px]">What It Does</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Executes real Python physics formulas in a locked child process with zero network access and strict 10-second resource limits.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-cyan-400 uppercase text-[11px]">How To Use It</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        1. Select a formula (LMTD, Darcy, Pump).<br />
+                        2. Adjust parameters or claimed values.<br />
+                        3. Click &quot;Execute Deterministic Verification&quot;.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3 pt-2">
                   <p>
-                    <strong>Why it exists:</strong> Large language models are prone to mathematical hallucinations when calculating pressure drops, heat loads, or pump kW. The sandbox executes real deterministic Python physics formulas in a zero-network child process.
+                    <strong>Vendor Claim Verifier:</strong> Enter the vendor&apos;s quoted duty (e.g. 1,850 kW). The sandbox runs the actual physical calculation (1,480.9 kW), calculates the discrepancy percentage (24.9%), and flags the quote as non-compliant if it exceeds 5% tolerance.
                   </p>
                   <p>
-                    <strong>Available calculators:</strong>
-                  </p>
-                  <ul className="list-disc pl-5 space-y-1 text-xs text-slate-600">
-                    <li><strong>Heat Exchanger Duty (LMTD):</strong> Computes thermal duty in kW, corrected log-mean temperature difference, and effective overall heat transfer coefficient (U).</li>
-                    <li><strong>Darcy-Weisbach Hydraulic Friction:</strong> Calculates Reynolds number, Colebrook-White friction factor (f), and pressure drop (bar).</li>
-                    <li><strong>Centrifugal Pump Sizing:</strong> Calculates hydraulic power, motor brake kW, and safety head margins under API 610.</li>
-                    <li><strong>Vendor Claim Discrepancy Verifier:</strong> Compares vendor quote claims against physical design laws and flags discrepancies exceeding 5% tolerance.</li>
-                  </ul>
-                  <p>
-                    <strong>AST Security Test:</strong> Click the red <em>&quot;Test Malicious Code&quot;</em> button to demonstrate how Abstract Syntax Tree validation blocks unauthorized network sockets and shell commands.
+                    <strong>Security Guard Test:</strong> Click the red <em>&quot;Test Malicious Code&quot;</em> button. The system inspects the Python Abstract Syntax Tree (AST) before running it, instantly blocking dangerous commands like <code className="font-mono text-xs">import socket</code> or <code className="font-mono text-xs">os.system</code>.
                   </p>
                 </div>
               </div>
             )}
 
             {activeSection === 'tab4-pid' && (
-              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
+              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-5">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Tab 4: P&amp;ID Schematic Explorer</h2>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">Multimodal engineering drawing intelligence and spatial connectivity tracing</p>
+                  <h2 className="text-lg font-bold text-slate-900">Tab 4: P&amp;ID Drawing Explorer</h2>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">Schematic entity recognition and connected valve tracing</p>
                 </div>
 
-                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
-                  <p>
-                    <strong>What it does:</strong> Analyzes Piping &amp; Instrumentation Diagrams (P&amp;IDs) to identify ISA-5.1 tags, trace connected safety relief valves and instruments, and render visual overlays.
-                  </p>
-                  <p>
-                    <strong>How to use:</strong> Select the pre-loaded <code className="font-mono">MRPL-PID-CDU-101.pdf</code> schematic. Click any entity on the left (e.g. Column <code className="font-mono">T-101</code>, Pump <code className="font-mono">P-101A</code>, or Valve <code className="font-mono">XV-101</code>).
-                  </p>
-                  <p>
-                    <strong>Spatial Proximity Tracing:</strong> The middle panel dynamically displays all transmitters, relief valves (<code className="font-mono">PSV-101A</code>, <code className="font-mono">BDV-101</code>), and process lines directly connected to the selected equipment.
-                  </p>
+                <div className="bg-slate-900 text-white rounded-lg p-5 space-y-3">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Executive Summary</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-amber-400 uppercase text-[11px]">Why This Exists</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        When an equipment piece fails, engineers must immediately trace which safety valves, relief lines, and sensors isolate that unit.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-emerald-400 uppercase text-[11px]">What It Does</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Detects ISA-5.1 tags, measures geometric distances between symbols, and maps connected isolation valves and transmitters.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-cyan-400 uppercase text-[11px]">How To Use It</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        1. Click any equipment tag (e.g. Column T-101).<br />
+                        2. See all connected valves and transmitters.<br />
+                        3. Click &quot;Render Overlay&quot; to see highlighted bounding boxes.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             {activeSection === 'tab5-audit' && (
-              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
+              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-5">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Tab 5: Cryptographic Audit Ledger</h2>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">Blockchain-inspired SHA-256 tamper-evident hash chain for safety compliance</p>
+                  <h2 className="text-lg font-bold text-slate-900">Tab 5: Safety Audit Ledger</h2>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">Tamper-evident cryptographic ledger linking all actions</p>
                 </div>
 
-                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
-                  <p>
-                    <strong>How it works:</strong> Every operational event (user query, document chunk view, sandbox calculation, MOC sign-off) is hashed using SHA-256 and chained to the previous record&apos;s hash.
-                  </p>
-                  <p>
-                    <strong>1-Click Ledger Verifier:</strong> Click <strong>Verify Ledger Integrity</strong> to recalculate the mathematical hash sequence from genesis to latest in real time. If any row is tampered with or modified in PostgreSQL, an alarm triggers pinpointing the exact corrupted sequence ID.
-                  </p>
+                <div className="bg-slate-900 text-white rounded-lg p-5 space-y-3">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Executive Summary</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-amber-400 uppercase text-[11px]">Why This Exists</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        In industrial safety investigations, investigators need absolute proof that audit logs were not secretly modified or deleted after an accident.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-emerald-400 uppercase text-[11px]">What It Does</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Links every search, calculation, and MOC approval into a sequential SHA-256 hash chain (like a local private blockchain).
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-cyan-400 uppercase text-[11px]">How To Use It</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        1. View the live table of sequence hashes.<br />
+                        2. Click &quot;Verify Ledger Integrity&quot;.<br />
+                        3. See 100% mathematical proof of zero tampering.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             {activeSection === 'tab6-governance' && (
-              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
+              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-5">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Tab 6: Drafting, Governance &amp; MOC Notes</h2>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">Automated technical drafting, human sign-offs, watermarked PDF export, and ROI metrics</p>
+                  <h2 className="text-lg font-bold text-slate-900">Tab 6: Drafting, Review &amp; Management of Change (MOC)</h2>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">Automated technical memoranda, human sign-offs, and watermarked PDF exports</p>
                 </div>
 
-                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
-                  <p>
-                    <strong>What it does:</strong> Transforms informal engineering observations into formal Management of Change (MOC) notes grounded in cited SOPs and verified sandbox physics.
-                  </p>
-                  <p>
-                    <strong>Governance Workflow:</strong>
-                  </p>
-                  <ol className="list-decimal pl-5 space-y-1 text-xs text-slate-600">
-                    <li>Select a drafting preset or enter a custom prompt, then click <strong>Generate Draft Note</strong>.</li>
-                    <li>Lead engineers can review the 5-section AI draft and make inline edits.</li>
-                    <li>Click <strong>Sign &amp; Approve (Cryptographic Seal)</strong> to generate an immutable SHA-256 signature stamp.</li>
-                    <li>Click <strong>Download PDF</strong> to export an official MRPL branded memorandum.</li>
-                  </ol>
-                  <p>
-                    <strong>ROI Metrics:</strong> Displays real-time metrics showing total engineer hours saved and estimated cost savings in INR (@ ₹1,500/hr baseline rate).
-                  </p>
+                <div className="bg-slate-900 text-white rounded-lg p-5 space-y-3">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Executive Summary</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-amber-400 uppercase text-[11px]">Why This Exists</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Drafting formal MOC proposals by hand takes engineers 45 minutes each. Bottlenecks delay safety modifications and cost millions in downtime.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-emerald-400 uppercase text-[11px]">What It Does</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Local AI drafts 5-section technical notes in 2 seconds. Lead engineers review, edit inline, sign digitally, and export official watermarked PDFs.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-cyan-400 uppercase text-[11px]">How To Use It</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        1. Pick a drafting preset and click &quot;Generate Note&quot;.<br />
+                        2. Edit text inline in the review panel.<br />
+                        3. Click &quot;Sign &amp; Approve&quot; and download the signed PDF.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             {activeSection === 'tab7-telemetry' && (
-              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
+              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-5">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Tab 7: DCS Telemetry &amp; Live Incidents</h2>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">Real-time SCADA/DCS process stream simulator and SOP emergency checklist synthesis</p>
+                  <h2 className="text-lg font-bold text-slate-900">Tab 7: Live DCS Telemetry &amp; Emergency Checklists</h2>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">SCADA process stream monitoring and automated SOP emergency procedures</p>
                 </div>
 
-                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
-                  <p>
-                    <strong>What it does:</strong> Simulates live Distributed Control System (DCS) process streams for CDU-1, FCCU, and HCU units.
-                  </p>
-                  <p>
-                    <strong>Fault Injection Simulator:</strong> Click any scenario button (e.g. <em>CDU Furnace Overheat TT-102 &gt; 385°C</em>).
-                  </p>
-                  <p>
-                    <strong>Automated SOP Cross-Correlation:</strong> The system detects the trip threshold, identifies the governing procedure (<code className="font-mono">MRPL-SOP-OPS-101</code>) and connected safety valves (<code className="font-mono">XV-101</code>, <code className="font-mono">BDV-101</code>), and automatically generates an interactive 5-step emergency execution checklist.
-                  </p>
-                  <p>
-                    Operators can click <strong>Sign-Off Step</strong> to acknowledge safety actions with cryptographic audit logging.
-                  </p>
+                <div className="bg-slate-900 text-white rounded-lg p-5 space-y-3">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Executive Summary</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-amber-400 uppercase text-[11px]">Why This Exists</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        When a furnace trips or column overpressurizes, operators must execute rapid emergency actions within 45 seconds to avoid disasters.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-emerald-400 uppercase text-[11px]">What It Does</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Simulates live plant sensors across CDU, FCCU, and HCU. When limits are exceeded, it cross-references SOPs and generates step-by-step checklists.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-cyan-400 uppercase text-[11px]">How To Use It</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        1. Click any fault scenario (e.g. Furnace Overheat).<br />
+                        2. See the alert trip and cited emergency procedure.<br />
+                        3. Click &quot;Sign-Off Step&quot; as you execute each safety action.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             {activeSection === 'tab8-investigation' && (
-              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
+              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-5">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Tab 8: Shift Handover &amp; 5-Why RCA</h2>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">Autonomous shift logs, dual-signatory custody transfer, and 5-Why root cause analysis</p>
+                  <h2 className="text-lg font-bold text-slate-900">Tab 8: Shift Handover &amp; 5-Why Investigation</h2>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">Turnover logs, dual-signatory custody transfer, and 5-Why causal investigation</p>
                 </div>
 
-                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
-                  <p>
-                    <strong>Shift Handover Intelligence:</strong> Select a shift period (<code className="font-mono">MORNING</code>, <code className="font-mono">EVENING</code>, <code className="font-mono">NIGHT</code>) and click <strong>Synthesize Shift Handover</strong>. It reads active alarms, equipment lineups, and pending MOCs directly from the audit ledger. Outgoing and relieving engineers complete a dual-signature seal and export a signed PDF.
-                  </p>
-                  <p>
-                    <strong>5-Why Incident Investigation:</strong> Select an incident preset (e.g. <em>FCCU Slurry Pump Trip</em>) and click <strong>Run 5-Why Causal Investigation</strong>. The engine builds a 5-level causal tree (Why 1 → Why 2 → Why 3 → Why 4 → Why 5) with cited evidence, assigns Corrective &amp; Preventive Actions (CAPA) with deadlines, and generates an official signed RCA PDF report.
-                  </p>
+                <div className="bg-slate-900 text-white rounded-lg p-5 space-y-3">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Executive Summary</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-amber-400 uppercase text-[11px]">Why This Exists</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Poor shift handovers are a major cause of industrial refinery accidents worldwide. Incomplete handover notes cause critical warnings to be missed.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-emerald-400 uppercase text-[11px]">What It Does</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Synthesizes 8-hour shift turnover logs directly from the audit ledger with dual signatures, and runs 5-Why root cause investigations with assigned CAPA.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-cyan-400 uppercase text-[11px]">How To Use It</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        1. Click &quot;Synthesize Shift Handover&quot; &amp; export signed PDF.<br />
+                        2. Pick an incident preset (e.g. Slurry Pump Trip).<br />
+                        3. Click &quot;Run 5-Why Investigation&quot; &amp; review CAPA deadlines.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -394,4 +537,3 @@ export default function DocumentationPage() {
     </div>
   );
 }
-
