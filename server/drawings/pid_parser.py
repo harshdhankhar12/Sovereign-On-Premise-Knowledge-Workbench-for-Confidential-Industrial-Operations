@@ -6,12 +6,13 @@ import fitz
 from PIL import Image, ImageDraw, ImageFont
 
 EQUIPMENT_PATTERNS = [
-    (r"\b(C-\d{3,4}[A-Z]?)\b", "EQUIPMENT", "COLUMN"),
+    (r"\b([CT]-\d{3,4}[A-Z]?)\b", "EQUIPMENT", "COLUMN"),
     (r"\b(E-\d{3,4}[A-Z]?)\b", "EQUIPMENT", "HEAT_EXCHANGER"),
     (r"\b(P-\d{3,4}[A-Z]?)\b", "EQUIPMENT", "PUMP"),
     (r"\b(V-\d{3,4}[A-Z]?)\b", "EQUIPMENT", "VESSEL"),
     (r"\b(D-\d{3,4}[A-Z]?)\b", "EQUIPMENT", "DRUM"),
     (r"\b(F-\d{3,4}[A-Z]?)\b", "EQUIPMENT", "FURNACE"),
+    (r"\b(R-\d{3,4}[A-Z]?)\b", "EQUIPMENT", "REACTOR"),
     (r"\b(TK-\d{3,4}[A-Z]?)\b", "EQUIPMENT", "TANK"),
 ]
 
@@ -44,7 +45,7 @@ VALVE_PATTERNS = [
 ]
 
 LINE_PATTERNS = [
-    (r"\b(\d{1,2}\"-[A-Z0-9]+-\d{3,4}(?:-[A-Z0-9]+)?)\b", "LINE", "PROCESS_PIPING"),
+    (r"\b(\d{1,2}\"-[A-Z0-9]+-\d{3,4}(?:-[A-Z0-9]+)*)\b", "LINE", "PROCESS_PIPING"),
 ]
 
 ALL_PATTERNS = LINE_PATTERNS + VALVE_PATTERNS + INSTRUMENT_PATTERNS + EQUIPMENT_PATTERNS
