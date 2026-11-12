@@ -33,7 +33,10 @@ import {
   Download,
   TrendingUp,
   CheckSquare,
-  FileSignature
+  FileSignature,
+  Activity,
+  Gauge,
+  Zap
 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8000/api/v1';
@@ -49,7 +52,7 @@ const ROLES: { id: RoleType; label: string; clearance: string[] }[] = [
 ];
 
 export default function WorkbenchDashboard() {
-  const [activeTab, setActiveTab] = useState<'chat' | 'docs' | 'sandbox' | 'drawings' | 'audit' | 'governance'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'docs' | 'sandbox' | 'drawings' | 'audit' | 'governance' | 'telemetry'>('chat');
   const [currentRole, setCurrentRole] = useState<RoleType>('PROCESS_ENGINEER');
   const [token, setToken] = useState<string>('');
   const [clearances, setClearances] = useState<string[]>(['PUBLIC', 'INTERNAL', 'RESTRICTED']);
@@ -113,6 +116,13 @@ export default function WorkbenchDashboard() {
   const [draftLoading, setDraftLoading] = useState<boolean>(false);
   const [roiMetrics, setRoiMetrics] = useState<any>(null);
   const [approvalFilter, setApprovalFilter] = useState<string>('ALL');
+
+  const [telemetrySnapshot, setTelemetrySnapshot] = useState<any>(null);
+  const [telemetryLoading, setTelemetryLoading] = useState<boolean>(false);
+  const [activeAlarms, setActiveAlarms] = useState<any[]>([]);
+  const [selectedAlarm, setSelectedAlarm] = useState<any>(null);
+  const [faultInjectLoading, setFaultInjectLoading] = useState<boolean>(false);
+  const [stepAckLoading, setStepAckLoading] = useState<string | null>(null);
 
   useEffect(() => {
     fetchToken(currentRole);
@@ -498,14 +508,109 @@ export default function WorkbenchDashboard() {
     setApprovalActionLoading(false);
   };
 
+  const fetchTelemetry = async () => {
+    setTelemetryLoading(true);
+    try {
+      const snapRes = await fetch(`${API_BASE}/telemetry/live`);
+      if (snapRes.ok) {
+        const snap = await snapRes.json();
+        setTelemetrySnapshot(snap);
+      }
+      const alarmsRes = await fetch(`${API_BASE}/telemetry/alarms`);
+      if (alarmsRes.ok) {
+        const data = await alarmsRes.json();
+        const incomingAlarms = data.alarms || [];
+        setActiveAlarms(incomingAlarms);
+        if (incomingAlarms.length > 0) {
+          setSelectedAlarm((prev: any) => {
+            if (!prev) return incomingAlarms[0];
+            const updated = incomingAlarms.find((a: any) => a.alarm_id === prev.alarm_id);
+            return updated || incomingAlarms[0];
+          });
+        } else {
+          setSelectedAlarm(null);
+        }
+      }
+    } catch {}
+    setTelemetryLoading(false);
+  };
+
+  const handleInjectFault = async (faultType: string) => {
+    setFaultInjectLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/telemetry/inject-fault`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ fault_type: faultType }),
+      });
+      if (res.ok) {
+        await fetchTelemetry();
+      }
+    } catch {}
+    setFaultInjectLoading(false);
+  };
+
+  const handleResetTelemetry = async () => {
+    setFaultInjectLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/telemetry/reset`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+      });
+      if (res.ok) {
+        await fetchTelemetry();
+      }
+    } catch {}
+    setFaultInjectLoading(false);
+  };
+
+  const handleAcknowledgeStep = async (alarmId: string, stepId: string) => {
+    setStepAckLoading(stepId);
+    try {
+      const roleLabel = ROLES.find(r => r.id === currentRole)?.label || 'Operator';
+      const res = await fetch(`${API_BASE}/telemetry/acknowledge-step`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          alarm_id: alarmId,
+          step_id: stepId,
+          operator_role: roleLabel,
+        }),
+      });
+      if (res.ok) {
+        await fetchTelemetry();
+      }
+    } catch {}
+    setStepAckLoading(null);
+  };
+
   useEffect(() => {
     if (activeTab === 'audit') {
       fetchAuditLogs();
     } else if (activeTab === 'governance') {
       fetchApprovals();
       fetchRoiMetrics();
+    } else if (activeTab === 'telemetry') {
+      fetchTelemetry();
     }
   }, [activeTab, token]);
+
+  useEffect(() => {
+    if (activeTab !== 'telemetry') return;
+    const interval = setInterval(() => {
+      fetchTelemetry();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [activeTab]);
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-800">
@@ -671,6 +776,23 @@ export default function WorkbenchDashboard() {
               {approvals.filter(a => a.status === 'PENDING').length > 0 && (
                 <span className="bg-amber-100 text-amber-800 text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ml-1 border border-amber-200">
                   {approvals.filter(a => a.status === 'PENDING').length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('telemetry')}
+              className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${
+                activeTab === 'telemetry'
+                  ? 'border-slate-900 text-slate-900'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              <span>DCS Telemetry & Incidents</span>
+              {activeAlarms.length > 0 && (
+                <span className="bg-rose-100 text-rose-800 text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ml-1 border border-rose-200 animate-pulse">
+                  {activeAlarms.length} ALARM{activeAlarms.length > 1 ? 'S' : ''}
                 </span>
               )}
             </button>
@@ -1856,6 +1978,382 @@ export default function WorkbenchDashboard() {
                   <div className="bg-white border border-slate-200 rounded-lg p-12 text-center text-slate-400 space-y-3">
                     <FileSignature className="w-10 h-10 mx-auto text-slate-300" />
                     <p className="text-sm font-medium">Select an approval request from the queue to review, edit, and sign off.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'telemetry' && (
+          <div className="space-y-6">
+            <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2.5 rounded-md ${
+                    telemetrySnapshot?.overall_status === 'CRITICAL'
+                      ? 'bg-rose-700 text-white animate-pulse'
+                      : telemetrySnapshot?.overall_status === 'WARNING'
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-emerald-700 text-white'
+                  }`}>
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h2 className="text-base font-bold text-slate-900">Distributed Control System (DCS) Live Telemetry</h2>
+                      <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                        telemetrySnapshot?.overall_status === 'CRITICAL'
+                          ? 'bg-rose-100 text-rose-800 border-rose-300'
+                          : telemetrySnapshot?.overall_status === 'WARNING'
+                          ? 'bg-amber-100 text-amber-800 border-amber-300'
+                          : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      }`}>
+                        {telemetrySnapshot?.overall_status === 'CRITICAL'
+                          ? 'CRITICAL TRIP ALARM ACTIVE'
+                          : telemetrySnapshot?.overall_status === 'WARNING'
+                          ? 'WARNING DEVIATION'
+                          : 'ALL PROCESS SYSTEMS NORMAL'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 font-mono mt-0.5">
+                      Honeywell TDC 3000 / Experion Stream Simulator • Air-Gapped Zero-Egress Sampling (4s cycle)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={fetchTelemetry}
+                    disabled={telemetryLoading}
+                    className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-3 py-2 rounded transition flex items-center space-x-1.5 shadow-sm disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${telemetryLoading ? 'animate-spin' : ''}`} />
+                    <span>Poll DCS</span>
+                  </button>
+                  <button
+                    onClick={handleResetTelemetry}
+                    disabled={faultInjectLoading}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded transition flex items-center space-x-1.5 border border-slate-200 disabled:opacity-50"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Reset to Nominal</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-1.5">
+                    <Zap className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Emergency Incident Simulator (Fault Injection)</span>
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-mono">Simulates plant DCS sensor excursions to verify automatic SOP cross-correlation</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                  <button
+                    onClick={() => handleInjectFault('CDU_FURNACE_OVERHEAT')}
+                    disabled={faultInjectLoading}
+                    className="bg-slate-50 hover:bg-rose-50 hover:border-rose-300 border border-slate-200 rounded p-2.5 text-left transition disabled:opacity-50 group"
+                  >
+                    <div className="text-xs font-bold text-slate-800 group-hover:text-rose-900">CDU Furnace Overheat</div>
+                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">TT-102 &gt; 385°C • Triggers SOP OPS-101</div>
+                  </button>
+
+                  <button
+                    onClick={() => handleInjectFault('CDU_COLUMN_OVERPRESSURE')}
+                    disabled={faultInjectLoading}
+                    className="bg-slate-50 hover:bg-rose-50 hover:border-rose-300 border border-slate-200 rounded p-2.5 text-left transition disabled:opacity-50 group"
+                  >
+                    <div className="text-xs font-bold text-slate-800 group-hover:text-rose-900">CDU Overhead Overpressure</div>
+                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">PT-101 &gt; 3.8 bar • Triggers SOP OPS-101</div>
+                  </button>
+
+                  <button
+                    onClick={() => handleInjectFault('FCCU_PUMP_SEAL_FAILURE')}
+                    disabled={faultInjectLoading}
+                    className="bg-slate-50 hover:bg-amber-50 hover:border-amber-300 border border-slate-200 rounded p-2.5 text-left transition disabled:opacity-50 group"
+                  >
+                    <div className="text-xs font-bold text-slate-800 group-hover:text-amber-900">Slurry Pump P-201A Trip</div>
+                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">Vibration &gt; 9.0 mm/s • SOP MEC-201</div>
+                  </button>
+
+                  <button
+                    onClick={() => handleInjectFault('HCU_QUENCH_RUNAWAY')}
+                    disabled={faultInjectLoading}
+                    className="bg-slate-50 hover:bg-purple-50 hover:border-purple-300 border border-slate-200 rounded p-2.5 text-left transition disabled:opacity-50 group"
+                  >
+                    <div className="text-xs font-bold text-slate-800 group-hover:text-purple-900">HCU Bed 1-2 Quench Runaway</div>
+                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">Delta T &gt; 18°C • SPEC HCK-901</div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-2">
+                    <Gauge className="w-4 h-4 text-slate-600" />
+                    <span>Plant Unit Telemetry Gauges</span>
+                  </h3>
+                  <span className="text-xs text-slate-500 font-mono">
+                    {telemetrySnapshot?.units?.length || 0} Units Online
+                  </span>
+                </div>
+
+                {telemetrySnapshot?.units?.map((unit: any) => (
+                  <div key={unit.unit_id} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">{unit.unit_name}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">{unit.unit_id} DCS Subsystem</div>
+                      </div>
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                        unit.status === 'CRITICAL'
+                          ? 'bg-rose-100 text-rose-800 border-rose-300'
+                          : unit.status === 'WARNING'
+                          ? 'bg-amber-100 text-amber-800 border-amber-300'
+                          : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      }`}>
+                        {unit.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {unit.sensors.map((s: any) => (
+                        <div
+                          key={s.tag}
+                          className={`p-2.5 rounded border transition-colors ${
+                            s.status === 'CRITICAL'
+                              ? 'bg-rose-50/80 border-rose-300 text-rose-950'
+                              : s.status === 'WARNING'
+                              ? 'bg-amber-50/80 border-amber-300 text-amber-950'
+                              : 'bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono font-bold text-xs">{s.tag}</span>
+                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${
+                              s.status === 'CRITICAL'
+                                ? 'bg-rose-200 text-rose-900'
+                                : s.status === 'WARNING'
+                                ? 'bg-amber-200 text-amber-900'
+                                : 'bg-slate-200 text-slate-700'
+                            }`}>
+                              {s.status}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 truncate mt-0.5">{s.name}</div>
+                          <div className="text-lg font-mono font-black mt-1">
+                            {s.value} <span className="text-xs font-normal text-slate-500 font-sans">{s.engineering_unit}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono mt-1 flex justify-between">
+                            <span>Norm: {s.nominal}</span>
+                            {s.trip_threshold && (
+                              <span className="text-rose-700 font-semibold">Trip: {s.trip_threshold}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="lg:col-span-7 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-2">
+                    <ShieldAlert className="w-4 h-4 text-slate-700" />
+                    <span>Emergency SOP Incident Action Console</span>
+                  </h3>
+                  {activeAlarms.length > 0 && (
+                    <span className="bg-rose-100 text-rose-800 text-xs font-mono font-bold px-2 py-0.5 rounded border border-rose-300 animate-pulse">
+                      {activeAlarms.length} Active Emergency Incident{activeAlarms.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+
+                {activeAlarms.length === 0 ? (
+                  <div className="bg-white border border-slate-200 rounded-lg p-10 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto text-emerald-700">
+                      <CheckCircle2 className="w-6 h-6" />
+                    </div>
+                    <div className="text-sm font-bold text-slate-800">All Refinery Units Safe & Nominal</div>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                      Zero active process alarms. When process telemetry deviates beyond safety margins, the sovereign engine automatically cross-references ISA-5.1 tag topography with confidential refinery SOPs and synthesizes an auditable, step-by-step emergency checklist.
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-mono">
+                      Click any fault scenario above to simulate a live refinery emergency.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {activeAlarms.length > 1 && (
+                      <div className="flex space-x-2 overflow-x-auto pb-1">
+                        {activeAlarms.map((alm: any) => (
+                          <button
+                            key={alm.alarm_id}
+                            onClick={() => setSelectedAlarm(alm)}
+                            className={`px-3 py-1.5 text-xs font-mono font-bold rounded border transition whitespace-nowrap ${
+                              selectedAlarm?.alarm_id === alm.alarm_id
+                                ? 'bg-slate-900 text-white border-slate-900'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            {alm.alarm_id} ({alm.tag})
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedAlarm && (
+                      <div className="space-y-4">
+                        <div className="bg-rose-50 border border-rose-300 rounded-lg p-4 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start space-x-2.5">
+                              <AlertTriangle className="w-5 h-5 text-rose-700 mt-0.5 shrink-0" />
+                              <div>
+                                <div className="text-sm font-bold text-rose-950">
+                                  {selectedAlarm.description}
+                                </div>
+                                <div className="text-xs text-rose-800 font-mono mt-0.5">
+                                  Alarm ID: {selectedAlarm.alarm_id} • Unit: {selectedAlarm.unit_name} ({selectedAlarm.unit_id})
+                                </div>
+                              </div>
+                            </div>
+                            <span className="bg-rose-200 text-rose-900 text-xs font-mono font-black px-2.5 py-1 rounded uppercase tracking-wider">
+                              {selectedAlarm.severity}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-rose-200/60 text-xs font-mono">
+                            <div>
+                              <span className="text-rose-700 block text-[10px] uppercase">Triggering Tag</span>
+                              <span className="font-bold text-rose-950">{selectedAlarm.tag}</span>
+                            </div>
+                            <div>
+                              <span className="text-rose-700 block text-[10px] uppercase">Recorded Value</span>
+                              <span className="font-bold text-rose-950">{selectedAlarm.current_value} {selectedAlarm.engineering_unit}</span>
+                            </div>
+                            <div>
+                              <span className="text-rose-700 block text-[10px] uppercase">Trip Threshold</span>
+                              <span className="font-bold text-rose-950">{selectedAlarm.threshold_value} {selectedAlarm.engineering_unit}</span>
+                            </div>
+                            <div>
+                              <span className="text-rose-700 block text-[10px] uppercase">Clearance Gate</span>
+                              <span className="font-bold text-rose-950">[{selectedAlarm.sop_clearance}]</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-2">
+                          <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Correlated Standard Operating Procedure &amp; P&amp;ID Topography
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 pt-1">
+                            <span className="bg-slate-100 border border-slate-300 text-slate-800 text-xs font-mono font-bold px-2.5 py-1 rounded flex items-center space-x-1.5">
+                              <FileText className="w-3.5 h-3.5 text-slate-600" />
+                              <span>{selectedAlarm.sop_doc_id}</span>
+                            </span>
+                            <span className="text-xs text-slate-600 font-medium">{selectedAlarm.sop_title}</span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-mono pt-1 flex items-center gap-1.5 flex-wrap">
+                            <span className="text-slate-400">Connected P&amp;ID Assets:</span>
+                            {selectedAlarm.connected_equipment?.map((eq: string) => (
+                              <span key={eq} className="bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.2 rounded font-bold">
+                                {eq}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-3">
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <div className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-2">
+                              <CheckSquare className="w-4 h-4 text-emerald-700" />
+                              <span>Mandatory Emergency Operational Steps</span>
+                            </div>
+                            <span className="text-[11px] text-slate-500 font-mono">
+                              {selectedAlarm.checklist?.filter((s: any) => s.completed).length} / {selectedAlarm.checklist?.length} Executed
+                            </span>
+                          </div>
+
+                          <div className="space-y-3">
+                            {selectedAlarm.checklist?.map((step: any) => (
+                              <div
+                                key={step.step_id}
+                                className={`p-3.5 rounded-lg border transition ${
+                                  step.completed
+                                    ? 'bg-emerald-50/70 border-emerald-300'
+                                    : 'bg-white border-slate-200 hover:border-slate-300'
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="space-y-1.5 flex-1">
+                                    <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                                      <span className="bg-slate-900 text-white font-mono text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                        STEP {step.sequence}
+                                      </span>
+                                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                                        step.priority.includes('CRITICAL')
+                                          ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                          : step.priority.includes('HIGH')
+                                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                          : 'bg-slate-100 text-slate-800 border border-slate-200'
+                                      }`}>
+                                        {step.priority}
+                                      </span>
+                                      <span className="text-[11px] text-slate-500 font-mono">
+                                        Ref: {step.sop_reference}
+                                      </span>
+                                    </div>
+
+                                    <p className={`text-xs font-medium leading-relaxed ${
+                                      step.completed ? 'text-emerald-950 line-through' : 'text-slate-800'
+                                    }`}>
+                                      {step.action}
+                                    </p>
+
+                                    <div className="flex items-center space-x-1.5 pt-1 text-[10px] font-mono text-slate-500">
+                                      <span className="text-slate-400">Target Tags:</span>
+                                      {step.associated_tags?.map((t: string) => (
+                                        <span key={t} className="bg-slate-100 text-slate-700 border border-slate-200 px-1 rounded font-semibold">
+                                          {t}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  <div className="shrink-0 pt-1">
+                                    {step.completed ? (
+                                      <div className="text-right">
+                                        <span className="inline-flex items-center space-x-1 bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-1 rounded text-[11px] font-mono font-bold">
+                                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                                          <span>EXECUTED</span>
+                                        </span>
+                                        <div className="text-[9px] text-slate-400 font-mono mt-0.5">
+                                          {step.completed_by} • SHA-256 Logged
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleAcknowledgeStep(selectedAlarm.alarm_id, step.step_id)}
+                                        disabled={stepAckLoading === step.step_id}
+                                        className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-1.5 rounded transition flex items-center space-x-1.5 shadow-sm disabled:opacity-50"
+                                      >
+                                        <CheckCircle2 className={`w-3.5 h-3.5 ${stepAckLoading === step.step_id ? 'animate-spin' : ''}`} />
+                                        <span>Sign-Off Step</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
