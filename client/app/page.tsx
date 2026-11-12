@@ -115,6 +115,23 @@ export default function WorkbenchDashboard() {
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState<string>('platinum catalyst synthesis and column trip criteria');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState<boolean>(false);
+  const [uploadTitle, setUploadTitle] = useState<string>('');
+  const [uploadUnit, setUploadUnit] = useState<string>('CDU');
+  const [uploadClearance, setUploadClearance] = useState<string>('PUBLIC');
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<string>('');
+  const [ingestedDocs, setIngestedDocs] = useState<any[]>([]);
+  const [lastUploadedDoc, setLastUploadedDoc] = useState<any>(null);
+
+  const [docChatTarget, setDocChatTarget] = useState<any>(null);
+  const [docChatQuery, setDocChatQuery] = useState<string>('');
+  const [docChatLoading, setDocChatLoading] = useState<boolean>(false);
+  const [docChatResponse, setDocChatResponse] = useState<any>(null);
+  const [docChatHistory, setDocChatHistory] = useState<any[]>([]);
+
   useEffect(() => {
     try {
       const savedTab = localStorage.getItem('sovereign_tab');
@@ -131,10 +148,22 @@ export default function WorkbenchDashboard() {
       }
       const savedLastDoc = localStorage.getItem('sovereign_last_uploaded_doc');
       if (savedLastDoc) {
-        setLastUploadedDoc(JSON.parse(savedLastDoc));
+        const parsedDoc = JSON.parse(savedLastDoc);
+        setLastUploadedDoc(parsedDoc);
+        setDocChatTarget(parsedDoc);
+      }
+      const savedDocHistory = localStorage.getItem('sovereign_doc_chat_history');
+      if (savedDocHistory) {
+        setDocChatHistory(JSON.parse(savedDocHistory));
       }
     } catch {}
   }, []);
+
+  useEffect(() => {
+    if (!docChatTarget && ingestedDocs.length > 0) {
+      setDocChatTarget(lastUploadedDoc || ingestedDocs[0]);
+    }
+  }, [ingestedDocs, lastUploadedDoc]);
 
   const handleSelectTab = (tab: 'chat' | 'docs' | 'sandbox' | 'drawings' | 'audit' | 'governance' | 'telemetry' | 'investigation') => {
     setActiveTab(tab);
@@ -173,17 +202,6 @@ export default function WorkbenchDashboard() {
     if (item.unit) setChatUnit(item.unit);
     if (item.response) setChatResponse(item.response);
   };
-
-  const [searchQuery, setSearchQuery] = useState<string>('platinum catalyst synthesis and column trip criteria');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searchLoading, setSearchLoading] = useState<boolean>(false);
-  const [uploadTitle, setUploadTitle] = useState<string>('MRPL Cooling Pump Maintenance');
-  const [uploadUnit, setUploadUnit] = useState<string>('CDU');
-  const [uploadClearance, setUploadClearance] = useState<string>('INTERNAL');
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadStatus, setUploadStatus] = useState<string>('');
-  const [ingestedDocs, setIngestedDocs] = useState<any[]>([]);
-  const [lastUploadedDoc, setLastUploadedDoc] = useState<any>(null);
 
   const [calcFormula, setCalcFormula] = useState<string>('HEAT_EXCHANGER_DUTY');
   const [paramU, setParamU] = useState<number>(520);
@@ -430,14 +448,32 @@ export default function WorkbenchDashboard() {
     setActiveTab('chat');
   };
 
+  const handleSelectDocForChat = (doc: any) => {
+    setDocChatTarget(doc);
+    setDocChatResponse(null);
+    setDocChatQuery(`Under this document, what are the primary procedures, safety parameters, or qualifications described?`);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setUploadFile(file);
+    setUploadStatus('');
+    if (file) {
+      const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+      setUploadTitle(cleanName);
+    }
+  };
+
   const handleDocumentUpload = async () => {
     if (!uploadFile) return;
-    setUploadStatus('Uploading and chunking document with local embeddings...');
+    const effectiveTitle = uploadTitle.trim() || uploadFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+    setUploadStatus(`Uploading and indexing "${effectiveTitle}" with local nomic-embed-text...`);
     const formData = new FormData();
     formData.append('file', uploadFile);
-    formData.append('title', uploadTitle);
-    formData.append('plant_unit', uploadUnit);
+    formData.append('title', effectiveTitle);
+    formData.append('doc_type', 'SOP');
     formData.append('document_type', 'SOP');
+    formData.append('plant_unit', uploadUnit);
     formData.append('confidentiality_level', uploadClearance);
 
     try {
@@ -448,16 +484,66 @@ export default function WorkbenchDashboard() {
       if (res.ok) {
         const data = await res.json();
         setLastUploadedDoc(data);
+        setDocChatTarget(data);
         try {
           localStorage.setItem('sovereign_last_uploaded_doc', JSON.stringify(data));
         } catch {}
-        setUploadStatus(`Uploaded: ${data.title} (${data.confidentiality_level}) - ${data.versions?.[0]?.metadata?.total_chunks || 'Chunks'} generated.`);
+        setUploadStatus(`Document "${data.title}" indexed successfully into pgvector (${data.confidentiality_level}). You can chat with it directly on this page below!`);
+        setUploadFile(null);
         await fetchIngestedDocs();
       } else {
-        setUploadStatus('Upload failed.');
+        const errData = await res.json().catch(() => ({}));
+        setUploadStatus(`Upload failed: ${errData.detail || 'Server error'}`);
       }
     } catch (e: any) {
       setUploadStatus(`Error: ${e.message}`);
+    }
+  };
+
+  const executeDocChat = async (questionOverride?: string) => {
+    const q = (questionOverride || docChatQuery).trim();
+    if (!q || !docChatTarget) return;
+    setDocChatLoading(true);
+    setDocChatResponse(null);
+    try {
+      const res = await fetch(`${API_BASE}/agent/query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          prompt: `Under document "${docChatTarget.title}", ${q}`,
+          plant_unit: docChatTarget.plant_unit || 'ALL',
+          user_id: `user_${currentRole.toLowerCase()}`,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDocChatResponse(data);
+        const newEntry = {
+          id: Date.now().toString(),
+          docTitle: docChatTarget.title,
+          question: q,
+          response: data.final_response || data.response || '',
+          citations: data.citations || [],
+          timestamp: new Date().toLocaleTimeString(),
+        };
+        setDocChatHistory(prev => {
+          const updated = [newEntry, ...prev].slice(0, 20);
+          try {
+            localStorage.setItem('sovereign_doc_chat_history', JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setDocChatResponse({ error: err.detail || 'Failed to query document.' });
+      }
+    } catch (e: any) {
+      setDocChatResponse({ error: e.message });
+    } finally {
+      setDocChatLoading(false);
     }
   };
 
@@ -1418,17 +1504,164 @@ export default function WorkbenchDashboard() {
           <div className="space-y-6">
             <ExecutiveSummary
               why="Refinery manuals, emergency procedures, and equipment catalogs must remain strictly confidential and searchable offline without uploading documents to external clouds."
-              what="Extracts text from uploaded PDFs locally, generates vector embeddings with on-premise nomic-embed-text, and performs role-governed semantic search with zero egress."
-              how={`1. Select a PDF to upload and choose access clearance.
-2. Type search keywords to find exact procedure steps.
-3. Click "Chat with Procedure" to query it directly in Tab 1.`}
+              what="Extracts text from uploaded PDFs locally, generates vector embeddings with on-premise nomic-embed-text, and provides instant in-page Q&A plus role-governed semantic search."
+              how={`1. Choose a PDF file (e.g. SOP, resume, equipment manual) - title is auto-detected.
+2. Click "Upload & Index (SHA-256 Verified)" to chunk and embed locally.
+3. Chat with the uploaded document directly on this page below, or search across all files.`}
             />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4">
-              <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
-                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center">
+            <div className="lg:col-span-2 space-y-5">
+              <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <MessageSquareText className="w-4 h-4 text-slate-800" />
+                      <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                        Chat with Selected Document (Local Offline AI)
+                      </h2>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Direct Q&amp;A with your uploaded document. Grounded strictly in extracted text chunks.
+                    </p>
+                  </div>
+
+                  {docChatTarget ? (
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <span className="text-[11px] font-mono font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200 max-w-[200px] truncate" title={docChatTarget.title}>
+                        {docChatTarget.title}
+                      </span>
+                      <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-200">
+                        {docChatTarget.confidentiality_level}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                      Select or upload a document
+                    </span>
+                  )}
+                </div>
+
+                {docChatTarget ? (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-1.5 text-[11px]">
+                      <span className="text-slate-500 font-semibold self-center mr-1">Quick Prompts:</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const q = "Summarize the key sections, roles, and main objectives in this document.";
+                          setDocChatQuery(q);
+                          executeDocChat(q);
+                        }}
+                        className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded text-[11px] transition"
+                      >
+                        Summarize Document
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const q = "What are the mandatory operating limits, procedures, or safety standards specified?";
+                          setDocChatQuery(q);
+                          executeDocChat(q);
+                        }}
+                        className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded text-[11px] transition"
+                      >
+                        Safety Limits &amp; Procedures
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const q = "What are the core technical qualifications, skills, or equipment parameters described?";
+                          setDocChatQuery(q);
+                          executeDocChat(q);
+                        }}
+                        className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded text-[11px] transition"
+                      >
+                        Technical Details &amp; Roles
+                      </button>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={docChatQuery}
+                        onChange={(e) => setDocChatQuery(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') executeDocChat(); }}
+                        placeholder={`Ask any question about "${docChatTarget.title}"...`}
+                        className="flex-1 text-xs sm:text-sm p-3 border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-sans"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => executeDocChat()}
+                        disabled={docChatLoading || !docChatQuery.trim()}
+                        className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded text-xs font-semibold flex items-center space-x-1.5 disabled:opacity-50 shadow-sm shrink-0"
+                      >
+                        {docChatLoading ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Analyzing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <MessageSquareText className="w-3.5 h-3.5" />
+                            <span>Ask Document</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {docChatResponse && (
+                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3 text-xs animate-in fade-in">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-200 text-slate-600">
+                          <span className="font-bold text-slate-900 flex items-center">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mr-1.5" />
+                            Answer Grounded in {docChatTarget.title}
+                          </span>
+                          <span className="font-mono text-[10px] text-slate-500">
+                            Model: llama3.2:1b (Local Air-Gap)
+                          </span>
+                        </div>
+
+                        <div className="prose prose-slate max-w-none text-xs sm:text-sm text-slate-800 leading-relaxed font-sans">
+                          <FormattedResponse content={docChatResponse.final_response || docChatResponse.response || docChatResponse.error || ''} />
+                        </div>
+
+                        {docChatResponse.citations && docChatResponse.citations.length > 0 && (
+                          <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center gap-1.5">
+                            <span className="font-semibold text-slate-700 text-[11px] flex items-center mr-1">
+                              <FileSearch className="w-3 h-3 mr-1 text-slate-500" />
+                              Cited Excerpts:
+                            </span>
+                            {docChatResponse.citations.map((c: string, idx: number) => (
+                              <span key={idx} className="bg-white text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-mono">
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-1 text-[11px]">
+                          <button
+                            type="button"
+                            onClick={() => handleChatWithDoc(docChatTarget.title, docChatTarget.plant_unit)}
+                            className="text-slate-700 hover:text-slate-900 underline flex items-center space-x-1"
+                          >
+                            <span>Open in Sovereign Multi-Agent Chat (Tab 1) &rarr;</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-xs text-slate-500 bg-slate-50 rounded border border-dashed border-slate-200">
+                    Choose a document from the Ingested Documents library or upload a PDF on the right to start an offline Q&amp;A session.
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center">
                   <Search className="w-4 h-4 mr-2 text-slate-700" />
-                  Clearance-Enforced Semantic Vector Search
+                  Clearance-Enforced Semantic Vector Search Across All Documents
                 </h2>
 
                 <div className="space-y-3">
@@ -1457,68 +1690,98 @@ export default function WorkbenchDashboard() {
                     </button>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-3">
-                <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Retrieved Document Chunks ({searchResults.length})
-                </h3>
+                <div className="space-y-3 pt-2">
+                  <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Retrieved Document Chunks ({searchResults.length})
+                  </h3>
 
-                {searchResults.length === 0 ? (
-                  <div className="bg-white border border-slate-200 rounded-lg p-8 text-center text-xs text-slate-500">
-                    No document chunks matching clearance level <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">{clearances.join(', ')}</code> found.
-                  </div>
-                ) : (
-                  searchResults.map((item: any, idx: number) => (
-                    <div key={idx} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-bold text-slate-900 text-xs sm:text-sm">
-                            {item.document_title}
-                          </span>
-                          <span className="bg-slate-100 text-slate-700 font-mono text-[11px] px-1.5 py-0.5 rounded border border-slate-200">
-                            Page {item.page_number || 1}
+                  {searchResults.length === 0 ? (
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 text-center text-xs text-slate-500">
+                      No document chunks matching clearance level <code className="font-mono bg-white px-1 py-0.5 rounded border">{clearances.join(', ')}</code> found.
+                    </div>
+                  ) : (
+                    searchResults.map((item: any, idx: number) => (
+                      <div key={idx} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                              {item.document_title}
+                            </span>
+                            <span className="bg-slate-100 text-slate-700 font-mono text-[11px] px-1.5 py-0.5 rounded border border-slate-200">
+                              Page {item.page_number || 1}
+                            </span>
+                          </div>
+                          <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                            Sim: {(item.similarity_score * 100).toFixed(1)}%
                           </span>
                         </div>
-                        <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                          Sim: {(item.similarity_score * 100).toFixed(1)}%
-                        </span>
-                      </div>
 
-                      <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3 rounded border border-slate-100 font-sans">
-                        {item.content}
-                      </p>
+                        <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3 rounded border border-slate-100 font-sans">
+                          {item.content}
+                        </p>
 
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono pt-1">
-                        <span>Citation: {item.citation} • Unit: {item.plant_unit || 'REFINERY'}</span>
-                        <button
-                          onClick={() => handleChatWithDoc(item.document_title, item.plant_unit)}
-                          className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center space-x-1 shadow-xs transition"
-                        >
-                          <MessageSquareText className="w-3 h-3 text-slate-600" />
-                          <span>Chat with Procedure</span>
-                        </button>
+                        <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono pt-1">
+                          <span>Citation: {item.citation} • Unit: {item.plant_unit || 'REFINERY'}</span>
+                          <div className="flex items-center space-x-1.5">
+                            <button
+                              onClick={() => {
+                                setDocChatTarget({ title: item.document_title, plant_unit: item.plant_unit, confidentiality_level: 'INTERNAL' });
+                                setDocChatQuery(`Under page ${item.page_number || 1}, what are the specific requirements?`);
+                                executeDocChat(`Under page ${item.page_number || 1}, what are the specific requirements?`);
+                              }}
+                              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center space-x-1 transition"
+                            >
+                              <MessageSquareText className="w-3 h-3" />
+                              <span>Chat Here</span>
+                            </button>
+                            <button
+                              onClick={() => handleChatWithDoc(item.document_title, item.plant_unit)}
+                              className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center space-x-1 transition shadow-xs"
+                            >
+                              <span>Tab 1 &rarr;</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3">
-                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center">
-                  <Upload className="w-4 h-4 mr-2 text-slate-700" />
-                  Ingest Technical PDF
-                </h3>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center">
+                    <Upload className="w-4 h-4 mr-2 text-slate-700" />
+                    <span>Upload Technical PDF</span>
+                  </h3>
+                  <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold border border-emerald-200">
+                    Air-Gapped Ingestion
+                  </span>
+                </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Document Title:</label>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Select PDF File:</label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileSelect}
+                    className="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer border border-slate-200 rounded p-1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Document Title (Auto-detected or custom):
+                  </label>
                   <input
                     type="text"
                     value={uploadTitle}
                     onChange={(e) => setUploadTitle(e.target.value)}
-                    className="w-full text-xs p-2 border border-slate-300 rounded"
+                    placeholder="Enter document title or select a file to auto-detect..."
+                    className="w-full text-xs p-2 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-slate-900"
                   />
                 </div>
 
@@ -1529,7 +1792,8 @@ export default function WorkbenchDashboard() {
                       type="text"
                       value={uploadUnit}
                       onChange={(e) => setUploadUnit(e.target.value)}
-                      className="w-full text-xs p-2 border border-slate-300 rounded uppercase font-mono"
+                      placeholder="e.g. CDU, FCCU, HCU"
+                      className="w-full text-xs p-2 border border-slate-300 rounded uppercase font-mono focus:outline-none focus:ring-1 focus:ring-slate-900"
                     />
                   </div>
 
@@ -1538,7 +1802,7 @@ export default function WorkbenchDashboard() {
                     <select
                       value={uploadClearance}
                       onChange={(e) => setUploadClearance(e.target.value)}
-                      className="w-full text-xs p-2 border border-slate-300 rounded"
+                      className="w-full text-xs p-2 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-slate-900"
                     >
                       <option value="PUBLIC">PUBLIC</option>
                       <option value="INTERNAL">INTERNAL</option>
@@ -1548,26 +1812,18 @@ export default function WorkbenchDashboard() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Select PDF File:</label>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                    className="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer"
-                  />
-                </div>
-
                 <button
+                  type="button"
                   onClick={handleDocumentUpload}
                   disabled={!uploadFile}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-2 rounded text-xs font-semibold disabled:opacity-50 transition"
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded text-xs font-semibold disabled:opacity-50 transition shadow-sm flex items-center justify-center space-x-1.5"
                 >
-                  Upload & Index (SHA-256 Verified)
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload &amp; Index (SHA-256 Verified)</span>
                 </button>
 
                 {uploadStatus && (
-                  <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded border border-slate-200">
+                  <p className="text-xs text-slate-700 bg-slate-50 p-2.5 rounded border border-slate-200 leading-relaxed font-sans">
                     {uploadStatus}
                   </p>
                 )}
@@ -1575,21 +1831,36 @@ export default function WorkbenchDashboard() {
                 {lastUploadedDoc && (
                   <div className="bg-emerald-50 border border-emerald-300 rounded p-3 text-xs space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-emerald-950">Ingestion Complete</span>
+                      <span className="font-bold text-emerald-950">Active Grounded Document</span>
                       <span className="font-mono text-[10px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-bold">
                         {lastUploadedDoc.confidentiality_level}
                       </span>
                     </div>
-                    <p className="text-emerald-800 text-[11px] truncate">
+                    <p className="text-emerald-900 font-semibold text-xs truncate">
                       {lastUploadedDoc.title}
                     </p>
-                    <button
-                      onClick={() => handleChatWithDoc(lastUploadedDoc.title, lastUploadedDoc.plant_unit)}
-                      className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-1.5 rounded transition flex items-center justify-center space-x-1.5 shadow-sm"
-                    >
-                      <MessageSquareText className="w-3.5 h-3.5" />
-                      <span>Chat with this Document &rarr;</span>
-                    </button>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDocChatTarget(lastUploadedDoc);
+                          setDocChatQuery('');
+                          setDocChatResponse(null);
+                        }}
+                        className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-1.5 px-2 rounded text-xs transition flex items-center justify-center space-x-1 shadow-sm"
+                      >
+                        <MessageSquareText className="w-3.5 h-3.5" />
+                        <span>Chat Here (Tab 2)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleChatWithDoc(lastUploadedDoc.title, lastUploadedDoc.plant_unit)}
+                        className="bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-semibold py-1.5 px-2 rounded text-xs transition shrink-0"
+                        title="Open full agent pipeline in Tab 1"
+                      >
+                        <span>Tab 1 &rarr;</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1602,21 +1873,43 @@ export default function WorkbenchDashboard() {
                   </h3>
                   <span className="text-[10px] font-mono text-slate-400">pgvector</span>
                 </div>
-                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
                   {ingestedDocs.map((doc: any) => (
-                    <div key={doc.id} className="p-2 rounded border border-slate-200 bg-slate-50 flex items-center justify-between gap-2 text-xs">
+                    <div
+                      key={doc.id}
+                      className={`p-2.5 rounded border transition flex items-center justify-between gap-2 text-xs ${
+                        docChatTarget?.id === doc.id || docChatTarget?.title === doc.title
+                          ? 'border-emerald-300 bg-emerald-50/60'
+                          : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                      }`}
+                    >
                       <div className="min-w-0 flex-1">
                         <div className="font-bold text-slate-900 truncate text-[11px]">{doc.title}</div>
                         <div className="text-[9px] font-mono text-slate-500">
                           {doc.plant_unit || 'ALL'} • <span className="font-semibold text-slate-700">{doc.confidentiality_level}</span>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleChatWithDoc(doc.title, doc.plant_unit)}
-                        className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded transition shrink-0 shadow-xs"
-                      >
-                        Chat
-                      </button>
+                      <div className="flex items-center space-x-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectDocForChat(doc)}
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded transition shadow-xs ${
+                            docChatTarget?.id === doc.id || docChatTarget?.title === doc.title
+                              ? 'bg-emerald-700 text-white'
+                              : 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-300'
+                          }`}
+                        >
+                          Chat Here
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleChatWithDoc(doc.title, doc.plant_unit)}
+                          className="bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 text-[10px] px-1.5 py-0.5 rounded transition"
+                          title="Open in Tab 1"
+                        >
+                          Tab 1
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
