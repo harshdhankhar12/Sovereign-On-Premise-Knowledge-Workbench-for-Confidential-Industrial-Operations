@@ -2,6 +2,7 @@ import json
 import re
 import time
 from typing import Dict, Any, Optional
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from server.agent.state import AgentState, AgentStepLog
 from server.core.llm import OllamaChatService
@@ -31,14 +32,6 @@ async def intent_node(
     t0 = time.perf_counter()
     prompt = state["prompt"]
 
-    system_msg = (
-        "You are an industrial refinery classifier. Categorize the query into one of: "
-        "SOP_QUERY, CALCULATION, VENDOR_VERIFICATION, GENERAL. "
-        "Return only JSON: {\"intent\": \"SOP_QUERY\"}"
-    )
-
-    user_msg = f"Query: \"{prompt}\""
-
     classified_intent = "SOP_QUERY"
     formula_name = None
     claimed_val = None
@@ -48,32 +41,14 @@ async def intent_node(
         classified_intent = "CALCULATION"
     elif any(w in lower_prompt for w in ["vendor", "claim", "proposal", "verify proposal", "discrepancy"]):
         classified_intent = "VENDOR_VERIFICATION"
-    elif any(w in lower_prompt for w in ["sop", "procedure", "shutdown", "isolate", "valve", "step", "protocol", "temperature", "pressure", "alarm", "trip", "c-101", "t-101", "p-101", "p-201", "r-901", "nfpa", "h2s", "guideline", "standard"]):
-        classified_intent = "SOP_QUERY"
     else:
-        try:
-            reply = await llm.chat(
-                messages=[
-                    {"role": "system", "content": system_msg},
-                    {"role": "user", "content": user_msg},
-                ],
-                temperature=0.0,
-                max_tokens=40,
-                timeout_seconds=4.0,
-            )
-            match = re.search(r"\{.*\}", reply, re.DOTALL)
-            if match:
-                parsed = json.loads(match.group(0))
-                classified_intent = parsed.get("intent", "SOP_QUERY")
-        except Exception:
-            classified_intent = "SOP_QUERY"
+        classified_intent = "SOP_QUERY"
 
-    lower_p = prompt.lower()
-    if "heat exchanger" in lower_p or "duty" in lower_p or "lmtd" in lower_p:
+    if "heat exchanger" in lower_prompt or "duty" in lower_prompt or "lmtd" in lower_prompt:
         formula_name = "HEAT_EXCHANGER_DUTY"
-    elif "darcy" in lower_p or "head loss" in lower_p or "pressure drop" in lower_p:
+    elif "darcy" in lower_prompt or "head loss" in lower_prompt or "pressure drop" in lower_prompt:
         formula_name = "DARCY_WEISBACH"
-    elif "pump" in lower_p and ("power" in lower_p or "motor" in lower_p or "head" in lower_p):
+    elif "pump" in lower_prompt and ("power" in lower_prompt or "motor" in lower_prompt or "head" in lower_prompt):
         formula_name = "PUMP_POWER"
 
     elapsed = int((time.perf_counter() - t0) * 1000)
@@ -110,22 +85,40 @@ async def retrieval_node(
     chunks = []
     citations = []
 
+    doc_id_val = state.get("document_id")
+    doc_title_val = state.get("document_title")
+
+    if not doc_title_val and 'Under document "' in state["prompt"]:
+        try:
+            doc_title_val = state["prompt"].split('Under document "')[1].split('"')[0]
+        except Exception:
+            pass
+
+    target_uuid = None
+    if doc_id_val:
+        try:
+            target_uuid = UUID(str(doc_id_val))
+        except Exception:
+            target_uuid = None
+
     if state.get("intent") != "CALCULATION":
         try:
             results = await search_service.search(
                 session=session,
                 query=state["prompt"],
-                top_k=state.get("top_k", 3),
+                top_k=state.get("top_k", 4),
                 plant_unit=state.get("plant_unit"),
                 doc_type=state.get("doc_type"),
                 similarity_threshold=0.25,
+                document_id=target_uuid,
+                document_title=doc_title_val,
             )
             for r in results:
                 chunks.append({
                     "chunk_id": str(r.chunk_id),
                     "document_title": r.document_title,
                     "page_number": r.page_number,
-                    "content": r.content[:600],
+                    "content": r.content,
                     "similarity_score": r.similarity_score,
                     "citation": r.citation,
                 })
@@ -254,7 +247,7 @@ async def synthesis_node(
     llm: OllamaChatService,
 ) -> Dict[str, Any]:
     task_id = state.get("task_id")
-    await notify_step(task_id, "STEP_STARTED", {"node": "synthesis_node", "message": "Synthesizing verified engineering response..."})
+    await notify_step(task_id, "STEP_STARTED", {"node": "synthesis_node", "message": "Synthesizing verified document response..."})
 
     t0 = time.perf_counter()
 
@@ -277,16 +270,26 @@ async def synthesis_node(
             sandbox_str += f"\nVerification: {'PASSED' if verification_passed else 'FLAGGED'}"
 
     system_instruction = (
-        "You are an expert AI assistant for refinery engineering operations.\n"
+        "You are an expert AI assistant that provides accurate, factual, and strictly grounded answers based on the retrieved document context.\n"
         "Instructions:\n"
-        "- Answer the engineer's query clearly and concisely using only the provided context and calculation results.\n"
-        "- Structure with clear bullet points, bold key equipment/tags, and explicit citations [Document (Page X)].\n"
-        "- Highlight mandatory safety precautions and isolation requirements.\n"
-        "- If calculations are provided, state the verified numbers.\n"
-        "- Keep response focused and rapid."
+        "- Base your answer solely on the provided Document Context and any verified calculation results.\n"
+        "- If the document is a resume, CV, or professional profile, present the candidate's skills, qualifications, work experience, projects, education, and contact details factually without mentioning refinery equipment, pumps, or plant procedures.\n"
+        "- If the document is an industrial or engineering SOP, outline procedural steps, operating limits, equipment tags, safety protocols, and isolation requirements.\n"
+        "- Structure your answer with clear headings, clean bullet points, bold key terms, and explicit citations [Document Title (Page X)].\n"
+        "- Format numbers, code, and terms cleanly. Never invent or hallucinate unmentioned equipment or procedures.\n"
+        "- Keep the response concise, fast, and directly relevant to the user query."
     )
 
-    user_query = f"Context:\n{context_str}{sandbox_str}\n\nQuestion: {prompt}\n\nAnswer:"
+    clean_prompt = prompt
+    if 'Under document "' in clean_prompt:
+        try:
+            parts = clean_prompt.split('", ', 1)
+            if len(parts) == 2:
+                clean_prompt = parts[1]
+        except Exception:
+            pass
+
+    user_query = f"Document Context:\n{context_str}{sandbox_str}\n\nUser Question: {clean_prompt}\n\nAnswer:"
 
     try:
         reply = await llm.chat(
@@ -296,7 +299,7 @@ async def synthesis_node(
             ],
             temperature=0.1,
             max_tokens=220,
-            timeout_seconds=45.0,
+            timeout_seconds=120.0,
         )
     except Exception as e:
         reply = f"Error generating synthesis response: {str(e)}"
@@ -305,7 +308,7 @@ async def synthesis_node(
     step_log: AgentStepLog = {
         "node": "synthesis_node",
         "status": "DONE",
-        "message": "Synthesized verified engineering response with citations",
+        "message": "Synthesized verified document response with citations",
         "duration_ms": elapsed,
     }
 

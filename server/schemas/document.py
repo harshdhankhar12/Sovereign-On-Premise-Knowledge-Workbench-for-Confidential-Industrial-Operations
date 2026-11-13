@@ -63,6 +63,8 @@ class DocumentSearchRequest(BaseModel):
     plant_unit: Optional[str] = None
     doc_type: Optional[str] = None
     similarity_threshold: float = Field(default=0.3, ge=0.0, le=1.0)
+    document_id: Optional[UUID] = None
+    document_title: Optional[str] = None
 
 class SearchResultItem(BaseModel):
     chunk_id: UUID

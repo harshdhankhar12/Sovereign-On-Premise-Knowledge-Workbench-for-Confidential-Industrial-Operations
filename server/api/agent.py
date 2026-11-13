@@ -51,6 +51,8 @@ async def query_agent(
             top_k=request.top_k,
             formula_params=request.formula_params,
             claimed_value=request.claimed_value,
+            document_id=str(request.document_id) if request.document_id else None,
+            document_title=request.document_title,
         )
     except Exception as e:
         task_record.status = "FAILED"

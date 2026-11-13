@@ -176,13 +176,35 @@ export default function WorkbenchDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!docChatTarget && ingestedDocs.length > 0) {
-      setDocChatTarget(lastUploadedDoc || ingestedDocs[0]);
+    if (ingestedDocs.length > 0) {
+      const matchDoc = (target: any) => {
+        if (!target) return null;
+        return ingestedDocs.find((d: any) => d.id === target.id) || target;
+      };
+      if (lastUploadedDoc) {
+        const freshLast = matchDoc(lastUploadedDoc);
+        if (freshLast && (freshLast.title !== lastUploadedDoc.title || freshLast.plant_unit !== lastUploadedDoc.plant_unit)) {
+          setLastUploadedDoc(freshLast);
+        }
+      }
+      if (!docChatTarget) {
+        setDocChatTarget(matchDoc(lastUploadedDoc) || ingestedDocs[0]);
+      } else {
+        const freshTarget = matchDoc(docChatTarget);
+        if (freshTarget && freshTarget.title !== docChatTarget.title) {
+          setDocChatTarget(freshTarget);
+        }
+      }
+      if (!universalDoc) {
+        handleSelectUniversalDoc(matchDoc(lastUploadedDoc) || ingestedDocs[0]);
+      } else {
+        const freshUniv = matchDoc(universalDoc);
+        if (freshUniv && (freshUniv.title !== universalDoc.title || freshUniv.plant_unit !== universalDoc.plant_unit)) {
+          setUniversalDoc(freshUniv);
+        }
+      }
     }
-    if (!universalDoc && ingestedDocs.length > 0) {
-      handleSelectUniversalDoc(lastUploadedDoc || ingestedDocs[0]);
-    }
-  }, [ingestedDocs, lastUploadedDoc]);
+  }, [ingestedDocs]);
 
   const handleSelectTab = (tab: 'chat' | 'docs' | 'sandbox' | 'drawings' | 'audit' | 'governance' | 'telemetry' | 'investigation' | 'universal') => {
     setActiveTab(tab);
@@ -462,9 +484,14 @@ export default function WorkbenchDashboard() {
   };
 
   const handleChatWithDoc = (docTitle: string, unit: string) => {
-    setChatPrompt(`Under ${docTitle}, what are the mandatory operating conditions, safety limits, and shutdown procedures?`);
+    const matched = ingestedDocs.find((d: any) => d.title === docTitle);
+    if (matched) {
+      handleSelectUniversalDoc(matched);
+      setDocChatTarget(matched);
+    }
+    setChatPrompt(`Under ${docTitle}, summarize its contents, key requirements, and procedures.`);
     setChatUnit(unit || 'ALL');
-    setActiveTab('chat');
+    setActiveTab('universal');
   };
 
   const handleSelectDocForChat = (doc: any) => {
@@ -537,6 +564,9 @@ You can ask any questions about its contents, request summaries, or extract spec
   const handleSelectUniversalDoc = (doc: any) => {
     setUniversalDoc(doc);
     try {
+      localStorage.setItem('sovereign_last_uploaded_doc', JSON.stringify(doc));
+    } catch { }
+    try {
       const saved = localStorage.getItem(`sovereign_univ_chat_${doc.id}`);
       if (saved) {
         setUniversalMessages(JSON.parse(saved));
@@ -584,6 +614,8 @@ Ask any question, request summaries, or click a quick prompt below.`,
           prompt: `Under document "${universalDoc.title}", ${text}`,
           plant_unit: universalDoc.plant_unit || 'ALL',
           user_id: `user_${currentRole.toLowerCase()}`,
+          document_id: universalDoc.id,
+          document_title: universalDoc.title,
         }),
       });
 
@@ -707,6 +739,8 @@ Ask any question, request summaries, or click a quick prompt below.`,
           prompt: `Under document "${docChatTarget.title}", ${q}`,
           plant_unit: docChatTarget.plant_unit || 'ALL',
           user_id: `user_${currentRole.toLowerCase()}`,
+          document_id: docChatTarget.id,
+          document_title: docChatTarget.title,
         }),
       });
       if (res.ok) {

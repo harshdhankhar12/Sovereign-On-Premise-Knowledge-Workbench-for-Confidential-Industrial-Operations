@@ -66,7 +66,50 @@ async def upload_document(
             .options(selectinload(Document.versions))
             .where(Document.id == existing_version.document_id)
         )
-        return (await db.execute(doc_stmt)).scalar_one()
+        existing_doc = (await db.execute(doc_stmt)).scalar_one()
+        if doc_title:
+            existing_doc.title = doc_title
+        if plant_unit:
+            existing_doc.plant_unit = plant_unit
+        if department:
+            existing_doc.department = department
+        if confidentiality_level:
+            existing_doc.confidentiality_level = confidentiality_level
+        if doc_type:
+            existing_doc.doc_type = doc_type
+
+        existing_version.file_name = file.filename
+
+        chunks_stmt = select(DocumentChunk).where(DocumentChunk.version_id == existing_version.id)
+        existing_chunks = (await db.execute(chunks_stmt)).scalars().all()
+        if not existing_chunks and extracted_chunks:
+            chunk_texts = [item["content"] for item in extracted_chunks]
+            try:
+                embeddings = await embedding_service.generate_embeddings_batch(chunk_texts)
+            except Exception:
+                embeddings = [None] * len(chunk_texts)
+
+            for idx, item in enumerate(extracted_chunks):
+                chunk_record = DocumentChunk(
+                    version_id=existing_version.id,
+                    chunk_index=item["chunk_index"],
+                    content=item["content"],
+                    embedding=embeddings[idx] if idx < len(embeddings) else None,
+                    page_number=item["page_number"],
+                    token_count=item["token_count"],
+                    metadata_=item["metadata"],
+                )
+                db.add(chunk_record)
+        else:
+            for chk in existing_chunks:
+                if chk.content.startswith("[Document:"):
+                    parts = chk.content.split("]\n\n", 1)
+                    if len(parts) == 2:
+                        chk.content = f"[Document: {existing_doc.title} | Page: {chk.page_number or 1}]\n\n{parts[1]}"
+
+        await db.commit()
+        await db.refresh(existing_doc)
+        return existing_doc
 
     doc_record = Document(
         title=doc_title,
@@ -140,6 +183,8 @@ async def search_documents(
             plant_unit=request.plant_unit,
             doc_type=request.doc_type,
             similarity_threshold=request.similarity_threshold,
+            document_id=request.document_id,
+            document_title=request.document_title,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search execution failed: {str(e)}")

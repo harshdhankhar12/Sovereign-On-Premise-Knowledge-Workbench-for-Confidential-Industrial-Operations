@@ -75,6 +75,8 @@ class SovereignAgentWorkflow:
         top_k: int = 4,
         formula_params: Optional[Dict[str, Any]] = None,
         claimed_value: Optional[float] = None,
+        document_id: Optional[str] = None,
+        document_title: Optional[str] = None,
     ) -> AgentState:
         initial_state: AgentState = {
             "task_id": task_id,
@@ -82,6 +84,8 @@ class SovereignAgentWorkflow:
             "prompt": prompt,
             "plant_unit": plant_unit,
             "doc_type": doc_type,
+            "document_id": document_id,
+            "document_title": document_title,
             "top_k": top_k,
             "intent": "SOP_QUERY",
             "retrieved_chunks": [],

@@ -11,6 +11,8 @@ class AgentQueryRequest(BaseModel):
     top_k: int = Field(default=4, ge=1, le=10)
     formula_params: Optional[Dict[str, Any]] = None
     claimed_value: Optional[float] = None
+    document_id: Optional[UUID] = None
+    document_title: Optional[str] = None
 
 class AgentStepItem(BaseModel):
     node: str

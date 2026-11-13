@@ -12,6 +12,8 @@ class AgentState(TypedDict):
     prompt: str
     plant_unit: Optional[str]
     doc_type: Optional[str]
+    document_id: Optional[str]
+    document_title: Optional[str]
     top_k: int
     intent: str
     retrieved_chunks: List[Dict[str, Any]]
