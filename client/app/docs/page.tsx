@@ -20,7 +20,8 @@ import {
   CheckCircle2,
   Terminal,
   Zap,
-  BookOpen
+  BookOpen,
+  Bot
 } from 'lucide-react';
 
 export default function DocumentationPage() {
@@ -37,6 +38,7 @@ export default function DocumentationPage() {
     { id: 'tab6-governance', label: 'Tab 6: Drafting, Review & MOC Notes', icon: ClipboardCheck },
     { id: 'tab7-telemetry', label: 'Tab 7: Live DCS Telemetry & Emergency Lists', icon: Activity },
     { id: 'tab8-investigation', label: 'Tab 8: Shift Handover & 5-Why Investigation', icon: FileCheck2 },
+    { id: 'tab9-universal', label: 'Tab 9: Universal AI Document Chat (Generic RAG)', icon: Bot },
   ];
 
   return (
@@ -524,6 +526,56 @@ export default function DocumentationPage() {
                       </p>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'tab9-universal' && (
+              <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-5">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Tab 9: Universal AI Document Chat (Generic RAG)</h2>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">Upload any arbitrary PDF document and run multi-turn conversational RAG with 100% offline local embeddings</p>
+                </div>
+
+                <div className="bg-slate-900 text-white rounded-lg p-5 space-y-3">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Executive Summary</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-amber-400 uppercase text-[11px]">Why This Exists</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Refinery personnel receive ad-hoc technical documents (vendor proposals, contractor resumes, incident memos, environmental audits) that cannot be sent to commercial cloud AI without violating corporate secrecy.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-emerald-400 uppercase text-[11px]">What It Does</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        Universal air-gapped document RAG. Ingests any PDF, generates 768-dimensional local vector embeddings, and provides a multi-turn conversational chat grounded strictly in that document with page citations.
+                      </p>
+                    </div>
+                    <div className="space-y-1 bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="font-bold text-cyan-400 uppercase text-[11px]">How To Use It</div>
+                      <p className="text-slate-300 leading-relaxed">
+                        1. Drag &amp; drop or choose ANY PDF document in the right panel and click &quot;Upload &amp; Ingest to Local RAG&quot;.<br />
+                        2. The active document is immediately loaded into the chat engine with verified pgvector chunks.<br />
+                        3. Chat naturally, click quick prompt suggestions, and inspect verified source citations with page numbers.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3 pt-2">
+                  <p>
+                    <strong>Universal Document Compatibility:</strong> Tab 9 accepts any standard PDF file—technical manuals, engineering specifications, vendor catalogs, resumes, or safety memos. The title is automatically detected from the file name.
+                  </p>
+                  <p>
+                    <strong>Conversational RAG Features:</strong>
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1 text-xs text-slate-600">
+                    <li><strong>Multi-Turn Thread:</strong> Maintains conversation history per document stored in browser memory.</li>
+                    <li><strong>Quick Prompts:</strong> 1-click pills for document summarization, safety limits, equipment tags, and risk identification.</li>
+                    <li><strong>Source Citations:</strong> Displays exact extracted chunk citations and page numbers under every response.</li>
+                    <li><strong>Library Switching:</strong> Instant switching between any previously ingested documents in the local database.</li>
+                  </ul>
                 </div>
               </div>
             )}
