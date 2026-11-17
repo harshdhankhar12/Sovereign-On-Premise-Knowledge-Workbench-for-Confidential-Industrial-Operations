@@ -37,9 +37,15 @@ export default function FormattedResponse({ content }: FormattedResponseProps) {
   const flushCodeBlock = () => {
     if (codeBlockLines.length > 0) {
       renderedElements.push(
-        <pre key={`code-${renderedElements.length}`} className="my-2.5 p-3 rounded-md bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto border border-slate-800 leading-relaxed">
-          <code>{codeBlockLines.join('\n')}</code>
-        </pre>
+        <div key={`code-${renderedElements.length}`} className="my-3 rounded-lg overflow-hidden border border-slate-200 shadow-2xs bg-slate-900">
+          <div className="flex items-center justify-between px-3.5 py-1.5 bg-slate-800/80 border-b border-slate-700/60 text-[11px] font-mono text-slate-300">
+            <span>Terminal / Code Snippet</span>
+            <span className="text-[10px] uppercase tracking-wider text-slate-400">Offline Safe</span>
+          </div>
+          <pre className="p-3 text-slate-100 font-mono text-xs overflow-x-auto leading-relaxed">
+            <code>{codeBlockLines.join('\n')}</code>
+          </pre>
+        </div>
       );
       codeBlockLines = [];
     }
@@ -128,9 +134,9 @@ export default function FormattedResponse({ content }: FormattedResponseProps) {
     if (isFormulaLine) {
       flushList();
       renderedElements.push(
-        <div key={`formula-${i}`} className="my-2 p-2.5 rounded bg-slate-50 border border-slate-300 font-mono text-xs sm:text-sm text-slate-900 font-bold flex items-center justify-between">
-          <span>{trimmed}</span>
-          <span className="text-[10px] text-slate-400 font-sans font-normal uppercase tracking-wider">Formula</span>
+        <div key={`formula-${i}`} className="my-2.5 p-3 rounded-lg bg-blue-50/50 border border-blue-200/70 font-mono text-xs sm:text-sm text-slate-900 font-bold flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+          <span className="text-blue-950 font-mono">{trimmed}</span>
+          <span className="text-[10px] bg-white border border-blue-200 text-blue-700 font-sans font-semibold uppercase tracking-wider px-2 py-0.5 rounded shadow-2xs">Formula</span>
         </div>
       );
       continue;
@@ -182,7 +188,7 @@ function parseInlineFormatting(text: string): React.ReactNode {
       );
     } else if (token.startsWith('[') && token.endsWith(']')) {
       parts.push(
-        <span key={`cite-${match.index}`} className="inline-flex items-center font-mono font-bold text-[11px] bg-slate-100 text-slate-800 px-1.5 py-0.2 rounded border border-slate-300 mx-1">
+        <span key={`cite-${match.index}`} className="inline-flex items-center font-mono font-semibold text-[11px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-200/80 mx-1 shadow-2xs hover:bg-blue-100/70 transition-colors">
           {token.slice(1, -1)}
         </span>
       );

@@ -46,7 +46,11 @@ import {
   Bot,
   Send,
   Paperclip,
-  FileQuestion
+  FileQuestion,
+  Menu,
+  X,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import Link from 'next/link';
 import FormattedResponse from './components/FormattedResponse';
@@ -73,28 +77,40 @@ function ExecutiveSummary({
   how: string;
 }) {
   return (
-    <div className="bg-slate-900  text-white rounded-lg p-4 sm:p-5 shadow-sm border border-slate-800">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">
-          Executive Summary &amp; Quick Guide
-        </span>
-        <span className="text-[10px] font-mono text-emerald-400 flex items-center">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
-          Air-Gapped Operation
-        </span>
+    <div className="bg-white border border-slate-200/90 rounded-xl p-4 sm:p-5 shadow-xs transition-all">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-3.5">
+        <div className="flex items-center space-x-2">
+          <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+          <span className="text-[11px] font-mono uppercase tracking-wider text-slate-700 font-bold">
+            Executive Summary &amp; Protocol Guide
+          </span>
+        </div>
+        <div className="inline-flex items-center space-x-1.5 text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+          <span>AIR-GAP VERIFIED (0 EGRESS)</span>
+        </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-        <div className="space-y-1 bg-slate-800/90 p-3 rounded border border-slate-700/80">
-          <div className="font-bold text-amber-400 uppercase text-[11px] tracking-wide">Why This Exists</div>
-          <p className="text-slate-300 leading-relaxed">{why}</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
+        <div className="space-y-1.5 bg-amber-50/40 p-3.5 rounded-lg border border-amber-200/70">
+          <div className="font-bold text-amber-800 uppercase text-[11px] tracking-wide flex items-center space-x-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            <span>Why This Exists</span>
+          </div>
+          <p className="text-slate-700 leading-relaxed font-sans">{why}</p>
         </div>
-        <div className="space-y-1 bg-slate-800/90 p-3 rounded border border-slate-700/80">
-          <div className="font-bold text-emerald-400 uppercase text-[11px] tracking-wide">What It Does</div>
-          <p className="text-slate-300 leading-relaxed">{what}</p>
+        <div className="space-y-1.5 bg-blue-50/40 p-3.5 rounded-lg border border-blue-200/70">
+          <div className="font-bold text-blue-800 uppercase text-[11px] tracking-wide flex items-center space-x-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+            <span>What It Does</span>
+          </div>
+          <p className="text-slate-700 leading-relaxed font-sans">{what}</p>
         </div>
-        <div className="space-y-1 bg-slate-800/90 p-3 rounded border border-slate-700/80">
-          <div className="font-bold text-cyan-400 uppercase text-[11px] tracking-wide">How To Use It</div>
-          <p className="text-slate-300 leading-relaxed whitespace-pre-line">{how}</p>
+        <div className="space-y-1.5 bg-indigo-50/40 p-3.5 rounded-lg border border-indigo-200/70">
+          <div className="font-bold text-indigo-800 uppercase text-[11px] tracking-wide flex items-center space-x-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+            <span>How To Use It</span>
+          </div>
+          <p className="text-slate-700 leading-relaxed font-sans whitespace-pre-line">{how}</p>
         </div>
       </div>
     </div>
@@ -104,6 +120,7 @@ function ExecutiveSummary({
 
 export default function WorkbenchDashboard() {
   const [activeTab, setActiveTab] = useState<'chat' | 'docs' | 'sandbox' | 'drawings' | 'audit' | 'governance' | 'telemetry' | 'investigation' | 'universal'>('chat');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [currentRole, setCurrentRole] = useState<RoleType>('PROCESS_ENGINEER');
   const [token, setToken] = useState<string>('');
   const [clearances, setClearances] = useState<string[]>(['PUBLIC', 'INTERNAL', 'RESTRICTED']);
@@ -1192,46 +1209,49 @@ Ask any question, request summaries, or click a quick prompt below.`,
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-800">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+      {/* Header */}
+      <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="bg-slate-900 text-white p-2 rounded-md">
+          <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-2 rounded-lg shadow-2xs shrink-0">
                 <Factory className="w-5 h-5" />
               </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-slate-900 tracking-tight text-base sm:text-lg">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <span className="font-bold text-slate-900 tracking-tight text-sm sm:text-base md:text-lg truncate">
                     SOVEREIGN INDUSTRIAL WORKBENCH
                   </span>
-                  <span className="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded font-mono font-medium border border-slate-200">
+                  <span className="bg-blue-50 text-blue-700 text-[10px] sm:text-xs px-2 py-0.5 rounded-md font-mono font-semibold border border-blue-200/70 shrink-0">
                     MRPL ON-PREMISE
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 hidden sm:block">
-                  Mangalore Refinery & Petrochemicals Limited • Air-Gapped Knowledge & Calculation System
+                <p className="text-xs text-slate-500 hidden md:block truncate">
+                  Mangalore Refinery &amp; Petrochemicals Limited • Air-Gapped Knowledge &amp; Calculation System
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="hidden lg:flex items-center space-x-3 text-xs font-mono text-slate-600 bg-slate-100 px-3 py-1.5 rounded border border-slate-200">
+            <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+              {/* Air-gap Badge for larger screens */}
+              <div className="hidden xl:flex items-center space-x-2.5 text-xs font-mono text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
                 <span className="inline-flex items-center text-emerald-700 font-semibold">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-                  AIR-GAPPED: NO EGRESS
+                  AIR-GAPPED (0 EGRESS)
                 </span>
                 <span className="text-slate-300">|</span>
-                <span>OLLAMA: LLAMA-3.2:1B</span>
+                <span>LLAMA-3.2:1B</span>
                 <span className="text-slate-300">|</span>
-                <span>PGVECTOR: READY</span>
+                <span>PGVECTOR</span>
               </div>
 
-              <div className="flex items-center space-x-2">
+              {/* Role Selector */}
+              <div className="flex items-center space-x-1.5">
                 <span className="text-xs text-slate-500 font-medium hidden sm:inline">Role:</span>
                 <select
                   value={currentRole}
                   onChange={(e) => handleSelectRole(e.target.value as RoleType)}
-                  className="bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-medium text-slate-800 hover:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900 shadow-sm"
+                  className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 shadow-2xs"
                 >
                   {ROLES.map((r) => (
                     <option key={r.id} value={r.id}>
@@ -1239,30 +1259,41 @@ Ask any question, request summaries, or click a quick prompt below.`,
                     </option>
                   ))}
                 </select>
-
-                <Link
-                  href="/docs"
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded flex items-center space-x-1 border border-slate-300 transition shadow-sm"
-                >
-                  <BookOpen className="w-3.5 h-3.5 text-slate-700" />
-                  <span className="hidden sm:inline">Docs &amp; Guide</span>
-                </Link>
               </div>
+
+              {/* Docs Link */}
+              <Link
+                href="/docs"
+                className="bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 transition flex items-center space-x-1 shadow-2xs"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+                <span className="hidden sm:inline">Docs &amp; Guide</span>
+              </Link>
+
+              {/* Mobile Menu Toggle Button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                aria-label="Toggle navigation menu"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5 text-slate-900" /> : <Menu className="w-5 h-5 text-slate-700" />}
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between py-2 border-t border-slate-100 text-xs">
-            <div className="flex items-center space-x-2">
-              <span className="text-slate-500 font-medium">Security Clearances:</span>
-              <div className="flex space-x-1">
+          {/* Sub Header info bar */}
+          <div className="flex flex-wrap items-center justify-between py-2 border-t border-slate-100 text-xs gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-slate-500 font-medium text-[11px]">Security Clearance:</span>
+              <div className="flex flex-wrap gap-1">
                 {clearances.map((c) => (
                   <span
                     key={c}
                     className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold ${c === 'SECRET'
-                      ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200/80'
                       : c === 'RESTRICTED'
-                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200/80'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200/80'
                       }`}
                   >
                     {c}
@@ -1271,28 +1302,102 @@ Ask any question, request summaries, or click a quick prompt below.`,
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 text-slate-500">
+            <div className="flex items-center space-x-3 text-slate-500 text-[11px]">
               <span className="flex items-center">
                 <Database className="w-3.5 h-3.5 mr-1 text-slate-400" />
-                PostgreSQL (Vector HNSW)
+                <span className="hidden sm:inline">PostgreSQL (Vector HNSW)</span>
+                <span className="sm:hidden">pgvector</span>
               </span>
               <span className="flex items-center">
                 <Cpu className="w-3.5 h-3.5 mr-1 text-slate-400" />
-                Redis Queue Worker
+                <span className="hidden sm:inline">Redis Queue Worker</span>
+                <span className="sm:hidden">Redis</span>
               </span>
             </div>
           </div>
         </div>
       </header>
 
-      <nav className="bg-white border-b border-slate-200 shadow-sm">
+      {/* Mobile Drawer (Visible when mobileMenuOpen is true) */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-white border-b border-slate-200 shadow-lg px-4 py-3 space-y-1.5 z-30 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 flex items-center justify-between">
+            <span>Workbench Modules</span>
+            <span className="font-mono text-emerald-600 text-[10px]">9 OFFLINE ENGINES</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {[
+              { id: 'chat', label: 'Ask Refinery AI', icon: MessageSquareText },
+              { id: 'docs', label: 'Upload & Search Documents', icon: FileText },
+              { id: 'sandbox', label: 'Industrial Physics Calculator', icon: Calculator },
+              { id: 'drawings', label: 'P&ID Drawing Explorer', icon: Layers },
+              { id: 'audit', label: 'Safety Audit Ledger', icon: ShieldAlert },
+              {
+                id: 'governance',
+                label: 'Drafting, Review & MOC',
+                icon: ClipboardCheck,
+                badge: approvals.filter(a => a.status === 'PENDING').length > 0 ? `${approvals.filter(a => a.status === 'PENDING').length} PENDING` : null,
+                badgeColor: 'amber'
+              },
+              {
+                id: 'telemetry',
+                label: 'Live DCS Telemetry',
+                icon: Activity,
+                badge: activeAlarms.length > 0 ? `${activeAlarms.length} ALARM` : null,
+                badgeColor: 'rose'
+              },
+              { id: 'investigation', label: 'Shift Handover & 5-Why', icon: FileCheck2 },
+              { id: 'universal', label: 'Universal Document Chat', icon: Bot, badge: 'ANY DOC', badgeColor: 'emerald' },
+            ].map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    handleSelectTab(item.id as any);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium flex items-center justify-between transition ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-800 font-semibold border border-blue-200/80 shadow-2xs'
+                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5 truncate">
+                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-500'}`} />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span
+                      className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full shrink-0 border ${
+                        item.badgeColor === 'rose'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse'
+                          : item.badgeColor === 'amber'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Primary Tab Navigation Strip */}
+      <nav className="bg-white border-b border-slate-200/90 shadow-2xs sticky top-16 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8 overflow-x-auto">
+          <div className="flex space-x-1 sm:space-x-6 overflow-x-auto no-scrollbar py-1">
             <button
               onClick={() => handleSelectTab('chat')}
-              className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${activeTab === 'chat'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              className={`py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors shrink-0 ${activeTab === 'chat'
+                ? 'border-blue-600 text-blue-700 font-semibold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
                 }`}
             >
               <MessageSquareText className="w-4 h-4" />
@@ -1301,9 +1406,9 @@ Ask any question, request summaries, or click a quick prompt below.`,
 
             <button
               onClick={() => handleSelectTab('docs')}
-              className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${activeTab === 'docs'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              className={`py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors shrink-0 ${activeTab === 'docs'
+                ? 'border-blue-600 text-blue-700 font-semibold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
                 }`}
             >
               <FileText className="w-4 h-4" />
@@ -1312,9 +1417,9 @@ Ask any question, request summaries, or click a quick prompt below.`,
 
             <button
               onClick={() => handleSelectTab('sandbox')}
-              className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${activeTab === 'sandbox'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              className={`py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors shrink-0 ${activeTab === 'sandbox'
+                ? 'border-blue-600 text-blue-700 font-semibold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
                 }`}
             >
               <Calculator className="w-4 h-4" />
@@ -1323,9 +1428,9 @@ Ask any question, request summaries, or click a quick prompt below.`,
 
             <button
               onClick={() => handleSelectTab('drawings')}
-              className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${activeTab === 'drawings'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              className={`py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors shrink-0 ${activeTab === 'drawings'
+                ? 'border-blue-600 text-blue-700 font-semibold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
                 }`}
             >
               <Layers className="w-4 h-4" />
@@ -1334,9 +1439,9 @@ Ask any question, request summaries, or click a quick prompt below.`,
 
             <button
               onClick={() => handleSelectTab('audit')}
-              className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${activeTab === 'audit'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              className={`py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors shrink-0 ${activeTab === 'audit'
+                ? 'border-blue-600 text-blue-700 font-semibold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
                 }`}
             >
               <ShieldAlert className="w-4 h-4" />
@@ -1345,15 +1450,15 @@ Ask any question, request summaries, or click a quick prompt below.`,
 
             <button
               onClick={() => handleSelectTab('governance')}
-              className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${activeTab === 'governance'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              className={`py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors shrink-0 ${activeTab === 'governance'
+                ? 'border-blue-600 text-blue-700 font-semibold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
                 }`}
             >
               <ClipboardCheck className="w-4 h-4" />
               <span>Drafting, Review &amp; MOC</span>
               {approvals.filter(a => a.status === 'PENDING').length > 0 && (
-                <span className="bg-amber-100 text-amber-800 text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ml-1 border border-amber-200">
+                <span className="bg-amber-50 text-amber-700 text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold ml-1 border border-amber-200">
                   {approvals.filter(a => a.status === 'PENDING').length}
                 </span>
               )}
@@ -1361,15 +1466,15 @@ Ask any question, request summaries, or click a quick prompt below.`,
 
             <button
               onClick={() => handleSelectTab('telemetry')}
-              className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${activeTab === 'telemetry'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              className={`py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors shrink-0 ${activeTab === 'telemetry'
+                ? 'border-blue-600 text-blue-700 font-semibold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
                 }`}
             >
               <Activity className="w-4 h-4" />
-              <span>Live Plant Telemetry &amp; Emergency Lists</span>
+              <span>Live Plant Telemetry</span>
               {activeAlarms.length > 0 && (
-                <span className="bg-rose-100 text-rose-800 text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ml-1 border border-rose-200 animate-pulse">
+                <span className="bg-rose-50 text-rose-700 text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold ml-1 border border-rose-200 animate-pulse">
                   {activeAlarms.length} ALARM{activeAlarms.length > 1 ? 'S' : ''}
                 </span>
               )}
@@ -1377,25 +1482,25 @@ Ask any question, request summaries, or click a quick prompt below.`,
 
             <button
               onClick={() => handleSelectTab('investigation')}
-              className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${activeTab === 'investigation'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              className={`py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors shrink-0 ${activeTab === 'investigation'
+                ? 'border-blue-600 text-blue-700 font-semibold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
                 }`}
             >
               <FileCheck2 className="w-4 h-4" />
-              <span>Shift Handover &amp; 5-Why Investigation</span>
+              <span>Shift Handover &amp; 5-Why</span>
             </button>
 
             <button
               onClick={() => handleSelectTab('universal')}
-              className={`py-3.5 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${activeTab === 'universal'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              className={`py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-2 whitespace-nowrap transition-colors shrink-0 ${activeTab === 'universal'
+                ? 'border-blue-600 text-blue-700 font-semibold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
                 }`}
             >
               <Bot className="w-4 h-4 text-emerald-600" />
               <span>Universal Document Chat</span>
-              <span className="bg-emerald-100 text-emerald-800 text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full border border-emerald-300">
+              <span className="bg-emerald-50 text-emerald-700 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full border border-emerald-200">
                 ANY DOC RAG
               </span>
             </button>
@@ -1490,7 +1595,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                       <button
                         onClick={executeChat}
                         disabled={chatLoading}
-                        className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded text-xs font-semibold flex items-center space-x-2 shadow-sm disabled:opacity-50 transition"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-xs font-semibold flex items-center space-x-2 shadow-xs disabled:opacity-50 transition active:scale-[0.99]"
                       >
                         {chatLoading ? (
                           <>
@@ -1552,9 +1657,9 @@ Ask any question, request summaries, or click a quick prompt below.`,
                       </span>
                       <span className="font-mono">{taskProgress}%</span>
                     </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                       <div
-                        className="bg-slate-900 h-1.5 rounded-full transition-all duration-300"
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${taskProgress}%` }}
                       ></div>
                     </div>
@@ -1822,7 +1927,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                           type="button"
                           onClick={() => executeDocChat()}
                           disabled={docChatLoading || !docChatQuery.trim()}
-                          className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded text-xs font-semibold flex items-center space-x-1.5 disabled:opacity-50 shadow-sm shrink-0"
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 disabled:opacity-50 shadow-xs shrink-0 transition active:scale-[0.99]"
                         >
                           {docChatLoading ? (
                             <>
@@ -1912,7 +2017,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                       <button
                         onClick={executeSecureSearch}
                         disabled={searchLoading}
-                        className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded text-xs font-semibold flex items-center space-x-1.5 shadow-sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-xs transition active:scale-[0.99]"
                       >
                         {searchLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
                         <span>Search Vector Index</span>
@@ -2045,7 +2150,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                     type="button"
                     onClick={handleDocumentUpload}
                     disabled={!uploadFile}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded text-xs font-semibold disabled:opacity-50 transition shadow-sm flex items-center justify-center space-x-1.5"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-xs font-semibold disabled:opacity-50 transition shadow-xs flex items-center justify-center space-x-1.5 active:scale-[0.99]"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>Upload &amp; Index (SHA-256 Verified)</span>
@@ -2258,7 +2363,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                   <button
                     onClick={runCalculation}
                     disabled={calcLoading}
-                    className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded text-xs font-semibold flex items-center space-x-1.5 shadow-sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-xs transition active:scale-[0.99]"
                   >
                     {calcLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
                     <span>Verify Against Physical Laws</span>
@@ -2334,7 +2439,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
 
                 <button
                   onClick={testAstSecurity}
-                  className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded text-xs font-semibold"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-xs transition active:scale-[0.99]"
                 >
                   Execute AST Analysis
                 </button>
@@ -2374,7 +2479,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                       <Layers className="w-4 h-4 mr-2 text-slate-700" />
                       Interactive P&ID Schematic & Visual Proximity
                     </h2>
-                    <label className="bg-slate-900 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded font-semibold cursor-pointer shadow-sm">
+                    <label className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg font-semibold cursor-pointer shadow-xs transition active:scale-[0.99]">
                       Upload Technical Schematic
                       <input type="file" accept=".pdf" onChange={uploadPIDDrawing} className="hidden" />
                     </label>
@@ -2404,7 +2509,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
 
                     <button
                       onClick={traceEquipment}
-                      className="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1 rounded text-xs font-semibold"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition active:scale-[0.99]"
                     >
                       Trace Connected Network
                     </button>
@@ -2476,7 +2581,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                   <button
                     onClick={runDrawingQA}
                     disabled={drawingQALoading || !drawingId}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-1.5 rounded text-xs font-semibold disabled:opacity-50"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-xs font-semibold disabled:opacity-50 shadow-xs transition active:scale-[0.99]"
                   >
                     {drawingQALoading ? 'Synthesizing...' : 'Query Drawing Topology'}
                   </button>
@@ -2779,7 +2884,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                   <button
                     onClick={handleDraftNote}
                     disabled={draftLoading}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold py-2.5 rounded transition flex items-center justify-center space-x-2 disabled:opacity-50"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2.5 rounded-lg transition flex items-center justify-center space-x-2 disabled:opacity-50 shadow-xs active:scale-[0.99]"
                   >
                     {draftLoading ? (
                       <>
@@ -2806,7 +2911,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                         <button
                           key={f}
                           onClick={() => setApprovalFilter(f)}
-                          className={`px-2 py-0.5 rounded font-mono font-medium ${approvalFilter === f ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          className={`px-2 py-0.5 rounded font-mono font-medium ${approvalFilter === f ? 'bg-blue-600 text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                         >
                           {f}
@@ -2885,7 +2990,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                           href={`${API_BASE}/governance/approvals/${selectedApproval.id}/export-pdf`}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 rounded transition shadow-sm"
+                          className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-xs active:scale-[0.99]"
                         >
                           <Download className="w-3.5 h-3.5" />
                           <span>Export Signed PDF</span>
@@ -3180,8 +3285,8 @@ Ask any question, request summaries, or click a quick prompt below.`,
                           <button
                             key={alm.alarm_id}
                             onClick={() => setSelectedAlarm(alm)}
-                            className={`px-3 py-1.5 text-xs font-mono font-bold rounded border transition whitespace-nowrap ${selectedAlarm?.alarm_id === alm.alarm_id
-                              ? 'bg-slate-900 text-white border-slate-900'
+                            className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg border transition whitespace-nowrap ${selectedAlarm?.alarm_id === alm.alarm_id
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                               : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                               }`}
                           >
@@ -3275,7 +3380,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                                 <div className="flex items-start justify-between gap-3">
                                   <div className="space-y-1.5 flex-1">
                                     <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                                      <span className="bg-slate-900 text-white font-mono text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                      <span className="bg-blue-600 text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded shadow-2xs">
                                         STEP {step.sequence}
                                       </span>
                                       <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${step.priority.includes('CRITICAL')
@@ -3354,7 +3459,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
             <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center space-x-3">
-                  <div className="bg-slate-900 text-white p-2.5 rounded-md">
+                  <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-2.5 rounded-lg shadow-2xs">
                     <FileCheck2 className="w-5 h-5" />
                   </div>
                   <div>
@@ -3391,8 +3496,8 @@ Ask any question, request summaries, or click a quick prompt below.`,
                       <button
                         key={s}
                         onClick={() => setShiftType(s)}
-                        className={`py-2 text-xs font-bold font-mono rounded border transition text-center ${shiftType === s
-                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                        className={`py-2 text-xs font-bold font-mono rounded-lg border transition text-center ${shiftType === s
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                           : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                           }`}
                       >
@@ -3428,7 +3533,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                   <button
                     onClick={handleGenerateHandover}
                     disabled={handoverLoading}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded transition flex items-center justify-center space-x-2 shadow-sm disabled:opacity-50"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-lg transition flex items-center justify-center space-x-2 shadow-xs disabled:opacity-50 active:scale-[0.99]"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${handoverLoading ? 'animate-spin' : ''}`} />
                     <span>Synthesize Shift Handover from Live Cryptographic Ledger</span>
@@ -3509,8 +3614,8 @@ Ask any question, request summaries, or click a quick prompt below.`,
                         <button
                           key={p.key}
                           onClick={() => handleSelectPreset(p)}
-                          className={`p-2 text-left rounded border transition ${selectedRcaPreset === p.key
-                            ? 'bg-slate-900 text-white border-slate-900'
+                          className={`p-2 text-left rounded-lg border transition ${selectedRcaPreset === p.key
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                             : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                             }`}
                         >
@@ -3574,7 +3679,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                   <button
                     onClick={handleGenerateRca}
                     disabled={rcaLoading}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded transition flex items-center justify-center space-x-2 shadow-sm disabled:opacity-50"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-lg transition flex items-center justify-center space-x-2 shadow-xs disabled:opacity-50 active:scale-[0.99]"
                   >
                     <GitBranch className={`w-3.5 h-3.5 ${rcaLoading ? 'animate-spin' : ''}`} />
                     <span>Run 5-Why Causal Investigation &amp; Synthesize CAPA</span>
@@ -3604,7 +3709,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                         {currentRcaReport.why_steps?.map((w: any) => (
                           <div key={w.level} className="bg-slate-50 border border-slate-200 rounded p-2.5 text-xs space-y-1">
                             <div className="flex items-center space-x-2">
-                              <span className="bg-slate-800 text-white font-mono text-[9px] font-bold px-1.5 py-0.2 rounded">
+                              <span className="bg-blue-600 text-white font-mono text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs">
                                 LEVEL {w.level}
                               </span>
                               <span className="font-semibold text-slate-900">{w.question}</span>
@@ -3724,7 +3829,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                           className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                           {msg.role === 'user' ? (
-                            <div className="bg-slate-900 text-white rounded-2xl rounded-tr-sm p-3.5 max-w-[85%] sm:max-w-[75%] shadow-sm text-xs sm:text-sm">
+                            <div className="bg-blue-600 text-white rounded-2xl rounded-tr-sm p-3.5 max-w-[85%] sm:max-w-[75%] shadow-xs text-xs sm:text-sm">
                               <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                               <div className="text-[10px] text-slate-400 font-mono text-right mt-1">
                                 {msg.timestamp}
@@ -3840,7 +3945,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                           type="button"
                           onClick={() => sendUniversalMessage()}
                           disabled={universalLoading || !universalInput.trim()}
-                          className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded text-xs font-semibold flex items-center space-x-1.5 disabled:opacity-50 shadow-sm shrink-0"
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 disabled:opacity-50 shadow-xs shrink-0 transition active:scale-[0.99]"
                         >
                           {universalLoading ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -3926,7 +4031,7 @@ Ask any question, request summaries, or click a quick prompt below.`,
                     type="button"
                     onClick={handleUniversalUpload}
                     disabled={!universalUploadFile}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded text-xs font-semibold disabled:opacity-50 transition shadow-sm flex items-center justify-center space-x-1.5"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-xs font-semibold disabled:opacity-50 transition shadow-xs flex items-center justify-center space-x-1.5 active:scale-[0.99]"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>Upload &amp; Ingest to Local RAG</span>
@@ -3999,12 +4104,12 @@ Ask any question, request summaries, or click a quick prompt below.`,
                   </div>
                 </div>
 
-                <div className="bg-slate-900 text-white rounded-lg p-4 shadow-sm text-xs space-y-2 border border-slate-800">
-                  <div className="flex items-center space-x-2 text-emerald-400 font-bold text-[11px] uppercase tracking-wider">
-                    <ShieldCheck className="w-4 h-4" />
+                <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs text-xs space-y-2">
+                  <div className="flex items-center space-x-2 text-emerald-700 font-bold text-[11px] uppercase tracking-wider">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
                     <span>Air-Gap Ingestion Guarantee</span>
                   </div>
-                  <p className="text-slate-300 text-[11px] leading-relaxed">
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
                     Every document chunk is indexed locally into PostgreSQL with 768-dim vector embeddings. No document content or queries ever leave this machine.
                   </p>
                 </div>
